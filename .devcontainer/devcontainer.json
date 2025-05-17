@@ -1,6 +1,5 @@
 {
 	"name": "ErmesCentralRepoDemo",
-	"context": "..",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "go",
 	"postCreateCommand": "go mod tidy",
