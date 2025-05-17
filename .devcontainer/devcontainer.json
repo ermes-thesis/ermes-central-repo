@@ -1,0 +1,11 @@
+{
+	"name": "ErmesCentralRepoDemo",
+	"context": "..",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "go",
+	"postCreateCommand": "go mod tidy",
+	// Enviroment variable accessible later from Go code
+//	"remoteEnv": {
+//		"DATABASE_URL": "postgres://user:password@postgres:5432/central_repo?sslmode=disable"
+//	}
+}
