@@ -2,6 +2,6 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/.devcontainer/init.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/db/DAO/user_group_dao.go" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/db/postgres/DAO/user_group_dao.go" dialect="GenericSQL" />
   </component>
 </project>

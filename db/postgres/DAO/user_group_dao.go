@@ -14,15 +14,15 @@ type UserGroupRelDAO interface {
 	GetAll() ([]UserGroupRelation, error)
 }
 
-type userGroupRelDAOImpl struct {
+type pgUserGroupRelDAOImpl struct {
 	pool *pgxpool.Pool
 }
 
 func NewUserGroupRelDAO(pool *pgxpool.Pool) UserGroupRelDAO {
-	return &userGroupRelDAOImpl{pool: pool}
+	return &pgUserGroupRelDAOImpl{pool: pool}
 }
 
-func (ugr userGroupRelDAOImpl) Add(userGroupRel UserGroupRelation) error {
+func (ugr pgUserGroupRelDAOImpl) Add(userGroupRel UserGroupRelation) error {
 	ctx := context.Background()
 	query := "INSERT INTO users_groups(user_id, assigned_group) VALUES(@uId,@gName)"
 	args := pgx.NamedArgs{
@@ -37,7 +37,7 @@ func (ugr userGroupRelDAOImpl) Add(userGroupRel UserGroupRelation) error {
 	return nil
 }
 
-func (ugr userGroupRelDAOImpl) GetByUserId(userId int) ([]UserGroupRelation, error) {
+func (ugr pgUserGroupRelDAOImpl) GetByUserId(userId int) ([]UserGroupRelation, error) {
 	ctx := context.Background()
 	fmt.Println(userId)
 	query := "SELECT * FROM users_groups WHERE user_id = 2"
@@ -54,7 +54,7 @@ func (ugr userGroupRelDAOImpl) GetByUserId(userId int) ([]UserGroupRelation, err
 	return pgx.CollectRows(rows, pgx.RowToStructByName[UserGroupRelation])
 }
 
-func (ugr userGroupRelDAOImpl) GetByGroupName(groupName string) ([]UserGroupRelation, error) {
+func (ugr pgUserGroupRelDAOImpl) GetByGroupName(groupName string) ([]UserGroupRelation, error) {
 	ctx := context.Background()
 	query := "SELECT * FROM users_groups WHERE assigned_group = @gName"
 	args := pgx.NamedArgs{
@@ -70,7 +70,7 @@ func (ugr userGroupRelDAOImpl) GetByGroupName(groupName string) ([]UserGroupRela
 	return pgx.CollectRows(rows, pgx.RowToStructByName[UserGroupRelation])
 }
 
-func (ugr userGroupRelDAOImpl) GetAll() ([]UserGroupRelation, error) {
+func (ugr pgUserGroupRelDAOImpl) GetAll() ([]UserGroupRelation, error) {
 	ctx := context.Background()
 	query := "SELECT * FROM users_groups"
 

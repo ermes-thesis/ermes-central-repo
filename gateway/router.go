@@ -1,63 +1,38 @@
 package gateway
 
 import (
-	"centralRepoDemo/db/DAO"
-	"encoding/json"
-	"fmt"
+	"centralRepoDemo/db/postgres/DAO"
+	"centralRepoDemo/db/redis"
+	"centralRepoDemo/gateway/handlers"
 	"io"
-	"log"
 	"net/http"
-	"strings"
+	"time"
 )
 
-func NewRouter(daoFactory *DAO.DAOFactory) *http.ServeMux {
+func NewRouterWithPostgres(daoFactory *DAO.DAOFactory) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		io.WriteString(w, `{ "message": "Hello World" }`)
+		_, _ = io.WriteString(w, `{ "message": "Hello World" }`)
+		time.Sleep(20 * time.Second)
 	})
-	mux.HandleFunc("/group-access", retrieveGroupToken(daoFactory))
+	mux.HandleFunc("/group-access", handlers.RetrieveGroupToken(daoFactory))
 
 	return mux
 }
 
-func retrieveGroupToken(factory *DAO.DAOFactory) http.HandlerFunc {
-	usersGroupsDAO := factory.UserGroupRelation()
-	log.Printf("Created usersGroupsDAO to access users_groups table: %+v\n", usersGroupsDAO)
+func NewRouterWithRedis(redisClient *redis.RedisClient) *http.ServeMux {
+	mux := http.NewServeMux()
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "No authorization header", http.StatusBadRequest)
-			return
-		}
-
-		const prefix = "Bearer "
-		if !strings.HasPrefix(authHeader, prefix) {
-			http.Error(w, "Invalid authorization header format", http.StatusBadRequest)
-		}
-
-		userId, err := executeAuthFunction()
-		if err != nil {
-			http.Error(w, "Authentication unsuccessful", http.StatusUnauthorized)
-		}
-
-		res, err := usersGroupsDAO.GetByUserId(userId)
-
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error while retrieving access group %s", err), http.StatusInternalServerError)
-		}
-
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(res)
-		if err != nil {
-			return
-		}
-	}
+		_, _ = io.WriteString(w, `{ "message": "Hello World" }`)
+		time.Sleep(20 * time.Second)
+	})
+	mux.HandleFunc("/group-access", handlers.RetrieveGroupTokenWithRedis(redisClient))
 
-}
+	mux.HandleFunc("/add-to-group", handlers.AddToGroupHandler(redisClient))
 
-func executeAuthFunction() (int, error) {
-	return 2, nil
+	return mux
 }
