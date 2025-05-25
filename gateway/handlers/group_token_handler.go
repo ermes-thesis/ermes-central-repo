@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const AUTH_PREFIX = "Bearer "
-
 func RetrieveGroupToken(factory *DAO.DAOFactory) http.HandlerFunc {
 	usersGroupsDAO := factory.UserGroupRelation()
 	log.Printf("Created usersGroupsDAO to access users_groups table: %+v\n", usersGroupsDAO)
@@ -49,20 +47,10 @@ func RetrieveGroupToken(factory *DAO.DAOFactory) http.HandlerFunc {
 
 func RetrieveGroupTokenWithRedis(rdbClient *redis.RedisClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "No authorization header", http.StatusBadRequest)
+		userId, httpErr := CheckHTTPReqAuth(r)
+		if httpErr != nil {
+			http.Error(w, httpErr.Error(), httpErr.StatusCode())
 			return
-		}
-
-		const prefix = "Bearer "
-		if !strings.HasPrefix(authHeader, prefix) {
-			http.Error(w, "Invalid authorization header format", http.StatusBadRequest)
-		}
-
-		userId, err := executeAuthFunction()
-		if err != nil {
-			http.Error(w, "Authentication unsuccessful", http.StatusUnauthorized)
 		}
 
 		res, err := rdbClient.GetUserGroups(userId)
@@ -78,8 +66,4 @@ func RetrieveGroupTokenWithRedis(rdbClient *redis.RedisClient) http.HandlerFunc 
 		}
 	}
 
-}
-
-func executeAuthFunction() (int, error) {
-	return 2, nil
 }
