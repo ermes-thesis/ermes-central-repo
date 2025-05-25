@@ -34,5 +34,11 @@ func NewRouterWithRedis(redisClient *redis.RedisClient) *http.ServeMux {
 
 	mux.HandleFunc("/add-to-group", handlers.AddToGroupHandler(redisClient))
 
+	mux.HandleFunc("/remove-from-group", handlers.RemoveFromGroupHandler(redisClient))
+
+	mux.HandleFunc("/create-group", handlers.CreateGroupHandler(redisClient))
+
+	mux.HandleFunc("/delete-group", handlers.DeleteGroupHandler(redisClient))
+
 	return mux
 }
