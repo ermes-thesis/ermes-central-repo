@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   go:
+    env_file: .env
     build:
       context: .
       dockerfile: Dockerfile
