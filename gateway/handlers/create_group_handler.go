@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"centralRepoDemo/db/redis"
+	"centralRepoDemo/db"
 	"net/http"
 )
 
-func CreateGroupHandler(redisClient *redis.RedisClient) http.HandlerFunc {
+func CreateGroupHandler(redisClient *db.RedisClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, httpErr := CheckHTTPReqAuth(r)
 		if httpErr != nil {

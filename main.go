@@ -1,7 +1,7 @@
 package main
 
 import (
-	"centralRepoDemo/db/redis"
+	"centralRepoDemo/db"
 	"centralRepoDemo/gateway"
 	"fmt"
 	"log"
@@ -13,8 +13,8 @@ func main() {
 }
 
 func runWithRedis() {
-	rdClient := redis.NewRedisClient()
-	defer func(rdClient *redis.RedisClient) {
+	rdClient := db.NewRedisClient()
+	defer func(rdClient *db.RedisClient) {
 		err := rdClient.Close()
 		if err != nil {
 			log.Fatal(err)

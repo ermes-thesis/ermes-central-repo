@@ -1,14 +1,14 @@
 package gateway
 
 import (
-	"centralRepoDemo/db/redis"
+	"centralRepoDemo/db"
 	"centralRepoDemo/gateway/handlers"
 	"io"
 	"net/http"
 	"time"
 )
 
-func NewRouter(redisClient *redis.RedisClient) *http.ServeMux {
+func NewRouter(redisClient *db.RedisClient) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
