@@ -1,24 +1,6 @@
 version: "3.8"
 
 services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: central_repo
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: "pg_isready --username=user -d central_repo && psql --username=user --list"
-      start_period: 30s
-      interval: 5s
-      timeout: 10s
-      retries: 20
-    volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - data_sql:/var/lib/postgresql/data
-
   go:
     build:
       context: .
@@ -29,18 +11,15 @@ services:
       - .:/workspace
     command: sleep infinity
     depends_on:
-      - postgres
+      - redis
   redis:
     image: redis:latest
-    restart: always
     ports:
       - '6379:6379'
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
       - redis:/data
 
-
 volumes:
   redis:
     driver: local
-  data_sql:
