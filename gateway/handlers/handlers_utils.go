@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const AUTH_PREFIX = "Bearer "
+const AuthPrefix = "Bearer "
 
 type HttpError struct {
 	message    string
@@ -43,7 +43,7 @@ func CheckHTTPReqAuth(r *http.Request) (int, *HttpError) {
 		return 0, &NoAuthHeaderErr
 	}
 
-	if !strings.HasPrefix(authHeader, AUTH_PREFIX) {
+	if !strings.HasPrefix(authHeader, AuthPrefix) {
 		return 0, &InvalidAuthHeaderErr
 	}
 
