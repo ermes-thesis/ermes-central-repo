@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"centralRepoDemo/config"
 	"centralRepoDemo/db"
 	"encoding/json"
 	"fmt"
@@ -28,7 +29,7 @@ func RetrieveGroupToken(rdbClient *db.RedisClient) http.HandlerFunc {
 			"exp":         time.Now().Add(time.Hour * 1).Unix(), // expires in 1 hour
 		})
 
-		groupTokenString, err := groupToken.SignedString([]byte("secret"))
+		groupTokenString, err := groupToken.SignedString([]byte(config.JWTSecret()))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
