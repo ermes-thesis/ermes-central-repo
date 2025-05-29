@@ -4,6 +4,7 @@ import (
 	"centralRepoDemo/db"
 	"centralRepoDemo/gateway"
 	"fmt"
+	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
 	"log"
 	"net/http"
 )
@@ -14,6 +15,8 @@ func main() {
 
 func runWithRedis() {
 	rdClient := db.NewRedisClient()
+	wasmPool := wasm.NewExecutorPool(10)
+
 	defer func(rdClient *db.RedisClient) {
 		err := rdClient.Close()
 		if err != nil {
@@ -21,11 +24,11 @@ func runWithRedis() {
 		}
 	}(rdClient)
 
-	err := rdClient.AddGroupToUser("DOCTORS", 1)
+	err := rdClient.AddGroupToUser("DOCTORS", "1")
 	if err != nil {
 		log.Fatal(err)
 	}
-	groups, err := rdClient.GetUserGroups(1)
+	groups, err := rdClient.GetUserGroups("1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +53,7 @@ func runWithRedis() {
 	}
 	fmt.Printf("The existing groups are: %v\n", existingGroups)
 
-	router := gateway.NewRouter(rdClient)
+	router := gateway.NewRouter(rdClient, wasmPool)
 
 	log.Printf("HTTP Gateway starting on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", router))

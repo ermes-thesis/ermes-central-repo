@@ -5,19 +5,19 @@ import (
 	"centralRepoDemo/db"
 	"encoding/json"
 	"fmt"
+	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"time"
 )
 
-func RetrieveGroupToken(rdbClient *db.RedisClient) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient *db.RedisClient, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, httpErr := CheckHTTPReqAuth(r)
+		userId, httpErr := CheckHTTPReqAuth(r, wasmPool)
 		if httpErr != nil {
 			http.Error(w, httpErr.Error(), httpErr.StatusCode())
 			return
 		}
-
 		res, err := rdbClient.GetUserGroups(userId)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error while retrieving access group %s", err), http.StatusInternalServerError)

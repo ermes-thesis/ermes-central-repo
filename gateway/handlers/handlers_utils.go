@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
 	"net/http"
 	"strings"
 )
@@ -37,24 +38,24 @@ var (
 	}
 )
 
-func CheckHTTPReqAuth(r *http.Request) (int, *HttpError) {
+func CheckHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool) (string, *HttpError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		return 0, &NoAuthHeaderErr
+		return "ERROR_ID", &NoAuthHeaderErr
 	}
 
 	if !strings.HasPrefix(authHeader, AuthPrefix) {
-		return 0, &InvalidAuthHeaderErr
+		return "ERROR_ID", &InvalidAuthHeaderErr
 	}
 
-	userId, err := executeAuthFunction()
-	if err != nil {
-		return 0, &AuthFailedErr
+	authToken := strings.TrimPrefix(authHeader, AuthPrefix)
+	executor := wasmPool.Acquire()
+	userId, fnErrCode := executor.InvokeAuthFn("auth", authToken)
+	executor.Release()
+
+	if fnErrCode != 200 {
+		return "ERROR_ID", &AuthFailedErr
 	}
 
 	return userId, nil
-}
-
-func executeAuthFunction() (int, error) {
-	return 2, nil
 }

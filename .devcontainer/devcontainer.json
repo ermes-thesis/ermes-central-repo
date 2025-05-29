@@ -7,4 +7,10 @@
 //	"remoteEnv": {
 //		"DATABASE_URL": "postgres://user:password@postgres:5432/central_repo?sslmode=disable"
 //	}
+    "workspaceFolder": "/workspaces/centralRepoDemo",
+	"mounts": [
+		"source=${localWorkspaceFolder}/../ermes-wasm-test,target=/workspaces/ermes-wasm-test,type=bind"
+	],
+	"postCreateCommand": "go work init . && go work sync",
+	"postAttachCommand": "(if [ -d \"../ermes-wasm-test\" ] && [ -f \"../ermes-wasm-test/go.mod\" ]; then go work use ../ermes-wasm-test; fi) && go work sync"
 }
