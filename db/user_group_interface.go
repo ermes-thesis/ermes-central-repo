@@ -27,7 +27,7 @@ func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 
 func (r *RedisClient) RemoveGroupFromUser(groupName string, userId string) error {
 	ctx := context.Background()
-	_, err := r.client.SRem(ctx, groupName).Result()
+	_, err := r.client.SRem(ctx, userId, groupName).Result()
 	if err != nil {
 		return err
 	}
