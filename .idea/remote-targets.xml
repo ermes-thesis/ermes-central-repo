@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <option name="projectDefaultTargetUuid" value="0780fc2c-1343-4274-ad7d-6f0bc1b0ee8e" />
+    <targets>
+      <target name="Compose" type="docker-compose" uuid="0780fc2c-1343-4274-ad7d-6f0bc1b0ee8e">
+        <config>
+          <option name="targetPlatform">
+            <TargetPlatform />
+          </option>
+          <option name="configurationFiles">
+            <list>
+              <option value="C:\Users\giaco\Desktop\central-repo\.devcontainer\docker-compose.yml" />
+            </list>
+          </option>
+          <option name="projectName" value="central-repo" />
+          <option name="serviceName" value="go" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="goPath" value="/go" />
+            <option name="goRoot" value="/usr/local/go/bin/go" />
+            <option name="goVersion" value="go1.24.3 linux/amd64" />
+            <option name="projectSourcesVolume">
+              <VolumeState>
+                <option name="remotePath" value="/workspaces/central-repo" />
+              </VolumeState>
+            </option>
+          </config>
+        </ContributedStateBase>
+      </target>
+      <target name="Container" type="docker" uuid="57be8d66-7d05-4430-8a2c-f4d6a079bfaa">
+        <config>
+          <option name="targetPlatform">
+            <TargetPlatform />
+          </option>
+          <option name="buildImageConfig">
+            <BuildImageConfig>
+              <option name="buildCliOptions" value="--rm " />
+              <option name="builtImageTag" value="central-repo" />
+              <option name="dockerFile" value=".devcontainer/Dockerfile" />
+              <option name="rebuildEveryTime" value="false" />
+            </BuildImageConfig>
+          </option>
+          <option name="containerConfig">
+            <ContainerConfig>
+              <option name="runCliOptions" value="--rm --network central-repo_dev-net -v gocache:/go/pkg/mod -v gocachebin:/root/.cache/go-build -v C:/Users/giaco/Desktop/ermes-wasm-test:/workspaces/ermes-wasm-test:cached --env-file C:/Users/giaco/Desktop/central-repo/.devcontainer/.env" />
+            </ContainerConfig>
+          </option>
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="compiledExecutablesVolume">
+              <VolumeState>
+                <option name="targetSpecificBits">
+                  <map>
+                    <entry key="mountAsVolume" value="false" />
+                  </map>
+                </option>
+              </VolumeState>
+            </option>
+            <option name="goPath" value="/go" />
+            <option name="goRoot" value="/usr/local/go/bin/go" />
+            <option name="goVersion" value="go1.24.3 linux/amd64" />
+            <option name="projectSourcesVolume">
+              <VolumeState>
+                <option name="remotePath" value="/workspaces/central-repo" />
+                <option name="targetSpecificBits">
+                  <map>
+                    <entry key="mountAsVolume" value="true" />
+                  </map>
+                </option>
+              </VolumeState>
+            </option>
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>

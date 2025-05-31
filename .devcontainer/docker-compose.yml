@@ -1,5 +1,4 @@
-version: "3.8"
-
+name: central-repo
 services:
   go:
     env_file: .env
@@ -9,10 +8,33 @@ services:
     ports:
       - "3000:8080"
     volumes:
-      - .:/workspace
-    command: sleep infinity
+      - ..:/workspaces/central-repo:cached
+      - ../../ermes-wasm-test:/workspaces/ermes-wasm-test:cached
+      - gocache:/go/pkg/mod  # Go module cache persistente
+      - gocachebin:/root/.cache/go-build # cache di compilazione
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
     depends_on:
       - redis
+    working_dir: /workspaces/central-repo
+    command: >
+      bash -c '
+        if [ ! -f go.work ]; then
+          go work init .
+        fi
+          
+        if [ -d "../ermes-wasm-test" ] && [ -f "../ermes-wasm-test/go.mod" ]; then
+          go work use ../ermes-wasm-test
+        fi
+      
+        go work sync
+        sleep infinity
+      '
+    networks:
+      - dev-net
+
   redis:
     image: redis:latest
     ports:
@@ -20,7 +42,17 @@ services:
     command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
       - redis:/data
+    networks:
+      - dev-net
 
 volumes:
   redis:
     driver: local
+  gocache:
+    driver: local
+  gocachebin:
+    driver: local
+
+networks:
+  dev-net:
+    attachable: true
