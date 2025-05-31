@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 )
 
 var (
@@ -16,11 +17,12 @@ var (
 )
 
 type config struct {
-	JWTSecret     string `envconfig:"JWT_SECRET" required:"true"`
-	RedisAddr     string `envconfig:"REDIS_ADDR" default:"redis"`
-	RedisPort     string `envconfig:"REDIS_PORT" default:"6379"`
-	RedisPassword string `envconfig:"REDIS_PASSWORD"`
-	RedisDB       int    `envconfig:"REDIS_DB" default:"0"`
+	JWTSecret         string `envconfig:"JWT_SECRET" required:"true"`
+	JWTExpirationTime int    `envconfig:"JWT_EXPIRATION_TIME" default:"3600"`
+	RedisAddr         string `envconfig:"REDIS_ADDR" default:"redis"`
+	RedisPort         string `envconfig:"REDIS_PORT" default:"6379"`
+	RedisPassword     string `envconfig:"REDIS_PASSWORD"`
+	RedisDB           int    `envconfig:"REDIS_DB" default:"0"`
 }
 
 func loadConfig() {
@@ -45,6 +47,11 @@ func JWTSecret() *rsa.PrivateKey {
 	}
 
 	return signKey
+}
+
+func JWTExpirationTime() time.Duration {
+	once.Do(loadConfig)
+	return time.Duration(cfg.JWTExpirationTime)
 }
 
 func RedisAddr() string {

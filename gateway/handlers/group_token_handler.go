@@ -26,7 +26,7 @@ func RetrieveGroupToken(rdbClient *db.RedisClient, wasmPool *wasm.ExecutorPool) 
 		groupToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 			"issuer":      userId,
 			"permissions": res,
-			"exp":         time.Now().Add(time.Hour * 1).Unix(), // expires in 1 hour
+			"exp":         time.Now().Add(time.Second * config.JWTExpirationTime()).Unix(), // expires in 1 hour
 		})
 
 		groupTokenString, err := groupToken.SignedString(config.JWTSecret())
