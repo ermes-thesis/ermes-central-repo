@@ -1,9 +1,12 @@
 package config
 
 import (
+	"crypto/rsa"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/kelseyhightower/envconfig"
 	"log"
+	"os"
 	"sync"
 )
 
@@ -23,15 +26,25 @@ type config struct {
 func loadConfig() {
 	cfg = &config{}
 	err := envconfig.Process("", cfg)
+	fmt.Println(cfg)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 	fmt.Println(cfg)
 }
 
-func JWTSecret() string {
+func JWTSecret() *rsa.PrivateKey {
 	once.Do(loadConfig)
-	return cfg.JWTSecret
+	signBytes, err := os.ReadFile(cfg.JWTSecret)
+	if err != nil {
+		log.Fatal("Error reading JWT secret file")
+	}
+	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+	if err != nil {
+		log.Fatal("Error parsing JWT secret file")
+	}
+
+	return signKey
 }
 
 func RedisAddr() string {

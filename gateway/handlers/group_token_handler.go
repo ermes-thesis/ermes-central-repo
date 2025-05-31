@@ -23,13 +23,13 @@ func RetrieveGroupToken(rdbClient *db.RedisClient, wasmPool *wasm.ExecutorPool) 
 			http.Error(w, fmt.Sprintf("Error while retrieving access group %s", err), http.StatusInternalServerError)
 		}
 
-		groupToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		groupToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 			"issuer":      userId,
 			"permissions": res,
 			"exp":         time.Now().Add(time.Hour * 1).Unix(), // expires in 1 hour
 		})
 
-		groupTokenString, err := groupToken.SignedString([]byte(config.JWTSecret()))
+		groupTokenString, err := groupToken.SignedString(config.JWTSecret())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
