@@ -10,6 +10,7 @@
           </option>
           <option name="configurationFiles">
             <list>
+              <option value="C:\Users\lucat\Desktop\centralRepoDemo\.devcontainer\docker-compose.yml" />
               <option value="C:\Users\giaco\Desktop\central-repo\.devcontainer\docker-compose.yml" />
             </list>
           </option>
@@ -44,7 +45,7 @@
           </option>
           <option name="containerConfig">
             <ContainerConfig>
-              <option name="runCliOptions" value="--rm --network central-repo_dev-net -v gocache:/go/pkg/mod -v gocachebin:/root/.cache/go-build -v C:/Users/giaco/Desktop/ermes-wasm-test:/workspaces/ermes-wasm-test:cached --env-file C:/Users/giaco/Desktop/central-repo/.devcontainer/.env" />
+              <option name="runCliOptions" value="--rm --network central-repo_dev-net -v gocache:/go/pkg/mod -v gocachebin:/root/.cache/go-build -v C:/Users/lucat/Desktop/ermes-wasm-test:/workspaces/ermes-wasm-test:cached --env-file C:/Users/lucat/Desktop/centralRepoDemo/.devcontainer/.env -p 3000:8080" />
             </ContainerConfig>
           </option>
         </config>

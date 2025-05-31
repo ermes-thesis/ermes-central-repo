@@ -8,10 +8,10 @@ import (
 
 func DeleteGroupHandler(redisClient *db.RedisClient, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, httpErr := CheckHTTPReqAuth(r, wasmPool)
-		if httpErr != nil {
-			http.Error(w, httpErr.Error(), httpErr.StatusCode())
-		}
+		//_, httpErr := CheckHTTPReqAuth(r, wasmPool)
+		//if httpErr != nil {
+		//	http.Error(w, httpErr.Error(), httpErr.StatusCode())
+		//}
 
 		groupName := r.URL.Query().Get("group")
 		err := redisClient.DeleteGroup(groupName)
