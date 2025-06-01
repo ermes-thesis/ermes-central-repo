@@ -39,21 +39,47 @@ func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 	return r.client.SMembers(ctx, userId).Result()
 }
 
-func (r *RedisClient) CreateGroup(groupName string) error {
+func (r *RedisClient) CreateGroup(groupName string, partecipantIDs []string) error {
 	ctx := context.Background()
 	_, err := r.client.SAdd(ctx, GROUP_LIST_KEY, groupName).Result()
 	if err != nil {
 		return err
 	}
+
+	for _, participantID := range partecipantIDs {
+		_, err = r.client.SAdd(ctx, participantID, groupName).Result()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func (r *RedisClient) DeleteGroup(groupName string) error {
 	ctx := context.Background()
-	_, err := r.client.SRem(ctx, GROUP_LIST_KEY, groupName).Result()
-	if err != nil {
-		return err
+
+	var cursor uint64
+	for {
+		var keys []string
+		var err error
+		keys, cursor, err = r.client.Scan(ctx, cursor, "*", 10).Result()
+		if err != nil {
+			return err
+		}
+
+		for _, key := range keys {
+			_, err = r.client.SRem(ctx, key, groupName).Result()
+			if err != nil {
+				return err
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
 	}
+
 	return nil
 }
 
