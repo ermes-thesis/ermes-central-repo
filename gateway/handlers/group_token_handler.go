@@ -1,19 +1,20 @@
 package handlers
 
 import (
-	"centralRepoDemo/config"
-	"centralRepoDemo/db"
+	"central-repo/config"
+	"central-repo/db"
 	"encoding/json"
 	"fmt"
 	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+	"strings"
 	"time"
 )
 
 func RetrieveGroupToken(rdbClient *db.RedisClient, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, httpErr := CheckHTTPReqAuth(r, wasmPool)
+		userId, httpErr := checkHTTPReqAuth(r, wasmPool)
 		if httpErr != nil {
 			http.Error(w, httpErr.Error(), httpErr.StatusCode())
 			return
@@ -44,5 +45,26 @@ func RetrieveGroupToken(rdbClient *db.RedisClient, wasmPool *wasm.ExecutorPool) 
 			return
 		}
 	}
+}
 
+func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool) (string, *HttpError) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "ERROR_ID", &NoAuthHeaderErr
+	}
+
+	if !strings.HasPrefix(authHeader, AuthPrefix) {
+		return "ERROR_ID", &InvalidAuthHeaderErr
+	}
+
+	authToken := strings.TrimPrefix(authHeader, AuthPrefix)
+	executor := wasmPool.Acquire()
+	userId, fnErrCode := executor.InvokeAuthFn("auth", authToken)
+	executor.Release()
+
+	if fnErrCode != 200 {
+		return "ERROR_ID", &AuthFailedErr
+	}
+
+	return userId, nil
 }

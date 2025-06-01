@@ -1,20 +1,30 @@
 package handlers
 
 import (
-	"centralRepoDemo/db"
-	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
+	"central-repo/db"
+	"encoding/json"
 	"net/http"
 )
 
-func CreateGroupHandler(redisClient *db.RedisClient, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
+func CreateGroupHandler(redisClient *db.RedisClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//_, httpErr := CheckHTTPReqAuth(r, wasmPool)
-		//if httpErr != nil {
-		//	http.Error(w, httpErr.Error(), httpErr.StatusCode())
-		//}
-
 		groupName := r.URL.Query().Get("group")
-		err := redisClient.CreateGroup(groupName)
+		if groupName == "" {
+			http.Error(w, "Missing groupName", http.StatusBadRequest)
+		}
+
+		partecipantIDsJson := r.URL.Query().Get("partecipants")
+		if partecipantIDsJson == "" {
+			http.Error(w, "Missing partecipants", http.StatusBadRequest)
+		}
+
+		var partecipantIDs []string
+		err := json.Unmarshal([]byte(partecipantIDsJson), &partecipantIDs)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		err = redisClient.CreateGroup(groupName, partecipantIDs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}

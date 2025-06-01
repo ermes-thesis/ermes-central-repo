@@ -1,19 +1,22 @@
 package handlers
 
 import (
-	"centralRepoDemo/db"
-	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
+	"central-repo/db"
 	"net/http"
 )
 
-func RemoveFromGroupHandler(redisClient *db.RedisClient, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
+func RemoveFromGroupHandler(redisClient *db.RedisClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//userId, httpErr := CheckHTTPReqAuth(r, wasmPool)
-		//if httpErr != nil {
-		//	http.Error(w, httpErr.Error(), httpErr.StatusCode())
-		//}
 		userId := r.URL.Query().Get("userId")
+		if userId == "" {
+			http.Error(w, "Missing userId", http.StatusBadRequest)
+		}
+
 		groupName := r.URL.Query().Get("group")
+		if groupName == "" {
+			http.Error(w, "Missing groupName", http.StatusBadRequest)
+		}
+
 		err := redisClient.RemoveGroupFromUser(groupName, userId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
