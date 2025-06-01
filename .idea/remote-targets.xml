@@ -10,8 +10,7 @@
           </option>
           <option name="configurationFiles">
             <list>
-              <option value="C:\Users\lucat\Desktop\centralRepoDemo\.devcontainer\docker-compose.yml" />
-              <option value="C:\Users\giaco\Desktop\central-repo\.devcontainer\docker-compose.yml" />
+              <option value="C:\Users\lucat\Desktop\central-repo\.devcontainer\docker-compose.yml" />
             </list>
           </option>
           <option name="projectName" value="central-repo" />

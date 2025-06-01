@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run in new container" type="GoApplicationRunConfiguration" factoryName="Go Application">
-    <module name="centralRepoDemo" />
+    <module name="central-repo" />
     <target name="Container" />
     <working_directory value="$PROJECT_DIR$" />
     <kind value="PACKAGE" />

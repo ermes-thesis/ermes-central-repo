@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/centralRepoDemo.iml" filepath="$PROJECT_DIR$/.idea/centralRepoDemo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/central-repo.iml" filepath="$PROJECT_DIR$/.idea/central-repo.iml" />
       <module fileurl="file://$PROJECT_DIR$/../ermes-wasm-test/.idea/ermes-wasm-test.iml" filepath="$PROJECT_DIR$/../ermes-wasm-test/.idea/ermes-wasm-test.iml" />
     </modules>
   </component>
