@@ -19,19 +19,7 @@ services:
     depends_on:
       - redis
     working_dir: /workspaces/central-repo
-    command: >
-      bash -c '
-        if [ ! -f go.work ]; then
-          go work init .
-        fi
-          
-        if [ -d "../ermes-wasm-test" ] && [ -f "../ermes-wasm-test/go.mod" ]; then
-          go work use ../ermes-wasm-test
-        fi
-      
-        go work sync
-        sleep infinity
-      '
+    command: sleep infinity
     networks:
       - dev-net
 

@@ -9,6 +9,18 @@ This repository contains the logic needed to execute a "central repository" node
 - WasmEdge
 - Redis
 
+For this repository to work properly, you must also clone
+the [WASM pool library](https://github.com/ermes-thesis/ermes-wasm-test) with this structure.
+
+```
+projects
+└───central-repo
+│   │   ...
+│   
+└───ermes-wasm-test
+    │   ...
+```
+
 It is recommended to use the provided DevContainer, which already satisfies all the requirements
 
 ## How to use the DevContainer
