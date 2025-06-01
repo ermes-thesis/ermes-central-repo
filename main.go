@@ -1,8 +1,8 @@
 package main
 
 import (
-	"centralRepoDemo/db"
-	"centralRepoDemo/gateway"
+	"central-repo/db"
+	"central-repo/gateway"
 	"fmt"
 	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
 	"log"
@@ -24,6 +24,8 @@ func runWithRedis() {
 		}
 	}(rdClient)
 
+	rdClient.CreateGroup("DOCTORS", []string{})
+
 	err := rdClient.AddGroupToUser("DOCTORS", "1")
 	if err != nil {
 		log.Fatal(err)
@@ -34,7 +36,7 @@ func runWithRedis() {
 	}
 	fmt.Printf("The groups for user:%d, are: %v\n", 1, groups)
 
-	err = rdClient.CreateGroup("PROVA")
+	err = rdClient.CreateGroup("PROVA", []string{})
 	if err != nil {
 		log.Fatal(err)
 	}

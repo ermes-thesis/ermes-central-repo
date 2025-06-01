@@ -1,7 +1,7 @@
 package db
 
 import (
-	"centralRepoDemo/config"
+	"central-repo/config"
 	"github.com/redis/go-redis/v9"
 )
 
