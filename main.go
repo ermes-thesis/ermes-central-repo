@@ -4,7 +4,7 @@ import (
 	"central-repo/db"
 	"central-repo/gateway"
 	"fmt"
-	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"log"
 	"net/http"
 )

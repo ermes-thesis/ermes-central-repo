@@ -10,14 +10,14 @@ This repository contains the logic needed to execute a "central repository" node
 - Redis
 
 For this repository to work properly, you must also clone
-the [WASM pool library](https://github.com/ermes-thesis/ermes-wasm-test) with this structure.
+the [WASM pool library](https://github.com/ermes-thesis/ermes-wasm-pool) with this structure.
 
 ```
 projects
 └───central-repo
 │   │   ...
 │   
-└───ermes-wasm-test
+└───ermes-wasm-pool
     │   ...
 ```
 

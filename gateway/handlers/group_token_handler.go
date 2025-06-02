@@ -5,7 +5,7 @@ import (
 	"central-repo/db"
 	"encoding/json"
 	"fmt"
-	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"

@@ -3,7 +3,7 @@ package gateway
 import (
 	"central-repo/db"
 	"central-repo/gateway/handlers"
-	"github.com/ermes-thesis/ermes-wasm-test/wasm-pool"
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"io"
 	"net/http"
 	"time"

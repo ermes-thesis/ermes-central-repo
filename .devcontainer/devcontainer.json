@@ -8,8 +8,8 @@
 //	}
     "workspaceFolder": "/workspaces/central-repo",
 	"mounts": [
-		"source=${localWorkspaceFolder}/../ermes-wasm-test,target=/workspaces/ermes-wasm-test,type=bind"
+		"source=${localWorkspaceFolder}/../ermes-wasm-pool,target=/workspaces/ermes-wasm-pool,type=bind"
 	],
 	"postCreateCommand": "go work init . && go work sync",
-	"postAttachCommand": "(if [ -d \"../ermes-wasm-test\" ] && [ -f \"../ermes-wasm-test/go.mod\" ]; then go work use ../ermes-wasm-test; fi) && go work sync"
+	"postAttachCommand": "(if [ -d \"../ermes-wasm-pool\" ] && [ -f \"../ermes-wasm-pool/go.mod\" ]; then go work use ../ermes-wasm-pool; fi) && go work sync"
 }
