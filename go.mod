@@ -1,4 +1,4 @@
-module central-repo
+module ermes-central-repo
 
 go 1.24.3
 

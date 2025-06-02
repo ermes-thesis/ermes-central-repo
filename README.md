@@ -14,7 +14,7 @@ the [WASM pool library](https://github.com/ermes-thesis/ermes-wasm-pool) with th
 
 ```
 projects
-└───central-repo
+└───ermes-central-repo
 │   │   ...
 │   
 └───ermes-wasm-pool

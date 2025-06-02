@@ -1,0 +1,1 @@
+This directory will be mounted in the file system of the wasm runtime

@@ -1,4 +1,4 @@
-name: central-repo
+name: ermes-central-repo
 services:
   go:
     env_file: .env
@@ -8,7 +8,7 @@ services:
     ports:
       - "3000:8080"
     volumes:
-      - ..:/workspaces/central-repo:cached
+      - ..:/workspaces/ermes-central-repo:cached
       - ../../ermes-wasm-pool:/workspaces/ermes-wasm-pool:cached
       - gocache:/go/pkg/mod  # Go module cache persistente
       - gocachebin:/root/.cache/go-build # cache di compilazione
@@ -18,7 +18,7 @@ services:
       - seccomp:unconfined
     depends_on:
       - redis
-    working_dir: /workspaces/central-repo
+    working_dir: /workspaces/ermes-central-repo
     command: sleep infinity
     networks:
       - dev-net

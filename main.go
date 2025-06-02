@@ -1,8 +1,8 @@
 package main
 
 import (
-	"central-repo/db"
-	"central-repo/gateway"
+	"ermes-central-repo/db"
+	"ermes-central-repo/gateway"
 	"fmt"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"log"

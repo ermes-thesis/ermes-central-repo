@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"central-repo/db"
+	"ermes-central-repo/db"
 	"net/http"
 )
 

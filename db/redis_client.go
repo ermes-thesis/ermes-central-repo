@@ -1,7 +1,7 @@
 package db
 
 import (
-	"central-repo/config"
+	"ermes-central-repo/config"
 	"github.com/redis/go-redis/v9"
 )
 

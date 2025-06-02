@@ -1,8 +1,8 @@
 package gateway
 
 import (
-	"central-repo/db"
-	"central-repo/gateway/handlers"
+	"ermes-central-repo/db"
+	"ermes-central-repo/gateway/handlers"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"io"
 	"net/http"

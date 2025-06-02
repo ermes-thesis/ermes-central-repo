@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"central-repo/db"
 	"encoding/json"
+	"ermes-central-repo/db"
 	"net/http"
 )
 

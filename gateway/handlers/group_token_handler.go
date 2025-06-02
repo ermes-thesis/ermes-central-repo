@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"central-repo/config"
-	"central-repo/db"
 	"encoding/json"
+	"ermes-central-repo/config"
+	"ermes-central-repo/db"
 	"fmt"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"github.com/golang-jwt/jwt/v5"

@@ -6,7 +6,7 @@
 //	"remoteEnv": {
 //		"DATABASE_URL": "postgres://user:password@postgres:5432/central_repo?sslmode=disable"
 //	}
-    "workspaceFolder": "/workspaces/central-repo",
+    "workspaceFolder": "/workspaces/ermes-central-repo",
 	"mounts": [
 		"source=${localWorkspaceFolder}/../ermes-wasm-pool,target=/workspaces/ermes-wasm-pool,type=bind"
 	],
