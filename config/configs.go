@@ -23,6 +23,8 @@ type config struct {
 	RedisPort         string `envconfig:"REDIS_PORT" default:"6379"`
 	RedisPassword     string `envconfig:"REDIS_PASSWORD"`
 	RedisDB           int    `envconfig:"REDIS_DB" default:"0"`
+	HTTPPort          string `envconfig:"HTTP_PORT" default:"8080"`
+	WASMPoolSize      int    `envconfig:"WASM_POOL_SIZE" default:"10"`
 }
 
 func loadConfig() {
@@ -72,4 +74,14 @@ func RedisPassword() string {
 func RedisDB() int {
 	once.Do(loadConfig)
 	return cfg.RedisDB
+}
+
+func HTTPPort() string {
+	once.Do(loadConfig)
+	return cfg.HTTPPort
+}
+
+func WASMPoolSize() int {
+	once.Do(loadConfig)
+	return cfg.WASMPoolSize
 }
