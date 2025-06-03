@@ -39,14 +39,14 @@ func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 	return r.client.SMembers(ctx, userId).Result()
 }
 
-func (r *RedisClient) CreateGroup(groupName string, partecipantIDs []string) error {
+func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) error {
 	ctx := context.Background()
 	_, err := r.client.SAdd(ctx, GROUP_LIST_KEY, groupName).Result()
 	if err != nil {
 		return err
 	}
 
-	for _, participantID := range partecipantIDs {
+	for _, participantID := range participantIDs {
 		_, err = r.client.SAdd(ctx, participantID, groupName).Result()
 		if err != nil {
 			return err
