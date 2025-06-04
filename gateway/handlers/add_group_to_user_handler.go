@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func AddToGroupHandler(redisClient *db.RedisClient) http.HandlerFunc {
+func AddToGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId := r.URL.Query().Get("userId")
 		if userId == "" {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func CreateGroupHandler(redisClient *db.RedisClient) http.HandlerFunc {
+func CreateGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groupName := r.URL.Query().Get("group")
 		if groupName == "" {

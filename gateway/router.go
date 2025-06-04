@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func NewRouter(redisClient *db.RedisClient, wasmPool *wasm.ExecutorPool) *http.ServeMux {
+func NewRouter(redisClient db.GenericDB, wasmPool *wasm.ExecutorPool) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

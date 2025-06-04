@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func RetrieveGroupToken(rdbClient *db.RedisClient, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId, httpErr := checkHTTPReqAuth(r, wasmPool)
 		if httpErr != nil {

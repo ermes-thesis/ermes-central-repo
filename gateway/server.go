@@ -11,7 +11,7 @@ import (
 
 type Server struct {
 	wasmPool    *wasm.ExecutorPool
-	redisClient *db.RedisClient
+	redisClient db.GenericDB
 	router      *http.ServeMux
 	logger      io.Writer
 }
@@ -21,7 +21,7 @@ func (s *Server) Router() *http.ServeMux {
 }
 
 func NewServer(logger io.Writer) *Server {
-	fmt.Fprintf(logger, "Creating a new Server instance... \n")
+	_, _ = fmt.Fprintf(logger, "Creating a new Server instance... \n")
 
 	wasmPool := wasm.NewExecutorPool(config.WASMPoolSize())
 	redisClient := db.NewRedisClient()
@@ -31,7 +31,7 @@ func NewServer(logger io.Writer) *Server {
 		logger:      logger,
 		router:      NewRouter(redisClient, wasmPool),
 	}
-	fmt.Fprintf(logger, "done \n")
+	_, _ = fmt.Fprintf(logger, "done \n")
 	return ser
 }
 
@@ -45,7 +45,7 @@ func (s *Server) Close() error {
 	return nil
 }
 
-func (s *Server) Init(initFun func(client *db.RedisClient)) {
+func (s *Server) Init(initFun func(client db.GenericDB)) {
 	initFun(s.redisClient)
 	//err := s.redisClient.CreateGroup("DOCTORS", []string{})
 	//if err != nil {

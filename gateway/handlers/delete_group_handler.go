@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func DeleteGroupHandler(redisClient *db.RedisClient) http.HandlerFunc {
+func DeleteGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		groupName := r.URL.Query().Get("group")
 		if groupName == "" {
