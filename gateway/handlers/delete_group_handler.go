@@ -13,8 +13,6 @@ func DeleteGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 		}
 		err := redisClient.DeleteGroup(groupName)
 
-		//TODO: Modify the code in order to also remove users belonging to the 'groupName' group
-
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
