@@ -10,11 +10,13 @@ func DeleteGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 		groupName := r.URL.Query().Get("group")
 		if groupName == "" {
 			http.Error(w, "Missing groupName", http.StatusBadRequest)
+			return
 		}
 		err := redisClient.DeleteGroup(groupName)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusOK)

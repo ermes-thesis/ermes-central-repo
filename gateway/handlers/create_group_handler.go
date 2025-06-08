@@ -11,22 +11,20 @@ func CreateGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 		groupName := r.URL.Query().Get("group")
 		if groupName == "" {
 			http.Error(w, "Missing groupName", http.StatusBadRequest)
-		}
-
-		participantIDsJson := r.URL.Query().Get("participants")
-		if participantIDsJson == "" {
-			http.Error(w, "Missing participants", http.StatusBadRequest)
+			return
 		}
 
 		var participantIDs []string
 		err := json.Unmarshal([]byte(participantIDsJson), &participantIDs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		err = redisClient.CreateGroup(groupName, participantIDs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusOK)

@@ -22,6 +22,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) htt
 		res, err := rdbClient.GetUserGroups(userId)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error while retrieving access group %s", err), http.StatusInternalServerError)
+			return
 		}
 
 		groupToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
@@ -33,6 +34,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) htt
 		groupTokenString, err := groupToken.SignedString(config.JWTSecret())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -42,6 +44,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) htt
 
 		err = json.NewEncoder(w).Encode(response)
 		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
