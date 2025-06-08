@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run WASM pool tests" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="ermes-wasm-pool" />
+    <target name="Compose WASM pool" />
+    <working_directory value="$PROJECT_DIR$/../ermes-wasm-pool/test" />
+    <kind value="PACKAGE" />
+    <package value="github.com/ermes-thesis/ermes-wasm-pool/test" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <option name="build_on_remote_target" value="true" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>
