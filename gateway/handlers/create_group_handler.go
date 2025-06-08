@@ -8,14 +8,14 @@ import (
 
 func CreateGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		groupName := r.URL.Query().Get("group")
+		groupName := r.PathValue("groupName")
 		if groupName == "" {
 			http.Error(w, "Missing groupName", http.StatusBadRequest)
 			return
 		}
 
 		var participantIDs []string
-		err := json.Unmarshal([]byte(participantIDsJson), &participantIDs)
+		err := json.NewDecoder(r.Body).Decode(&participantIDs)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -27,6 +27,6 @@ func CreateGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 	}
 }

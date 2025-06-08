@@ -6,7 +6,6 @@ import (
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"io"
 	"net/http"
-	"time"
 )
 
 func NewRouter(redisClient db.GenericDB, wasmPool *wasm.ExecutorPool) *http.ServeMux {
@@ -15,17 +14,16 @@ func NewRouter(redisClient db.GenericDB, wasmPool *wasm.ExecutorPool) *http.Serv
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{ "message": "Hello World" }`)
-		time.Sleep(20 * time.Second)
 	})
-	mux.HandleFunc("/group-access", handlers.RetrieveGroupToken(redisClient, wasmPool))
+	mux.HandleFunc("GET /token", handlers.RetrieveGroupToken(redisClient, wasmPool))
 
-	mux.HandleFunc("/add-to-group", handlers.AddToGroupHandler(redisClient))
+	mux.HandleFunc("POST /group/{groupName}/{userId}", handlers.AddToGroupHandler(redisClient))
 
-	mux.HandleFunc("/remove-from-group", handlers.RemoveFromGroupHandler(redisClient))
+	mux.HandleFunc("DELETE /group/{groupName}/{userId}", handlers.RemoveFromGroupHandler(redisClient))
 
-	mux.HandleFunc("/create-group", handlers.CreateGroupHandler(redisClient))
+	mux.HandleFunc("POST /group/{groupName}", handlers.CreateGroupHandler(redisClient))
 
-	mux.HandleFunc("/delete-group", handlers.DeleteGroupHandler(redisClient))
+	mux.HandleFunc("DELETE /group/{groupName}", handlers.DeleteGroupHandler(redisClient))
 
 	return mux
 }

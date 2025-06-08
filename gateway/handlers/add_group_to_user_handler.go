@@ -7,13 +7,13 @@ import (
 
 func AddToGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId := r.URL.Query().Get("userId")
+		userId := r.PathValue("userId")
 		if userId == "" {
 			http.Error(w, "Missing userId", http.StatusBadRequest)
 			return
 		}
 
-		groupName := r.URL.Query().Get("group")
+		groupName := r.PathValue("groupName")
 		if groupName == "" {
 			http.Error(w, "Missing groupName", http.StatusBadRequest)
 			return
