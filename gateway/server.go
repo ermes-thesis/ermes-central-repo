@@ -12,11 +12,11 @@ import (
 type Server struct {
 	wasmPool    *wasm.ExecutorPool
 	redisClient db.GenericDB
-	router      *http.ServeMux
+	router      http.Handler
 	logger      io.Writer
 }
 
-func (s *Server) Router() *http.ServeMux {
+func (s *Server) Router() http.Handler {
 	return s.router
 }
 
@@ -29,10 +29,20 @@ func NewServer(logger io.Writer) *Server {
 		wasmPool:    wasmPool,
 		redisClient: redisClient,
 		logger:      logger,
-		router:      NewRouter(redisClient, wasmPool),
+		router:      filterMiddleware(NewRouter(redisClient, wasmPool)),
 	}
 	_, _ = fmt.Fprintf(logger, "done \n")
 	return ser
+}
+
+func filterMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-ERMES-SECRET") != config.ErmesSecret() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) Close() error {

@@ -25,6 +25,7 @@ type config struct {
 	RedisDB           int    `envconfig:"REDIS_DB" default:"0"`
 	HTTPPort          string `envconfig:"HTTP_PORT" default:"8080"`
 	WASMPoolSize      int    `envconfig:"WASM_POOL_SIZE" default:"10"`
+	ErmesSecret       string `envconfig:"ERMES_SECRET" required:"true"`
 }
 
 func loadConfig() {
@@ -84,4 +85,9 @@ func HTTPPort() string {
 func WASMPoolSize() int {
 	once.Do(loadConfig)
 	return cfg.WASMPoolSize
+}
+
+func ErmesSecret() string {
+	once.Do(loadConfig)
+	return cfg.ErmesSecret
 }
