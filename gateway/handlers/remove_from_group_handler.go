@@ -7,6 +7,7 @@ import (
 
 func RemoveFromGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Body.Close()
 		userId := r.PathValue("userId")
 		if userId == "" {
 			http.Error(w, "Missing userId", http.StatusBadRequest)

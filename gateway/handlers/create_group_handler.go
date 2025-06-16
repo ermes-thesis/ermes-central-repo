@@ -20,6 +20,7 @@ func CreateGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		_ = r.Body.Close()
 
 		err = redisClient.CreateGroup(groupName, participantIDs)
 		if err != nil {

@@ -14,6 +14,7 @@ import (
 
 func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Body.Close()
 		userId, httpErr := checkHTTPReqAuth(r, wasmPool)
 		if httpErr != nil {
 			http.Error(w, httpErr.Error(), httpErr.StatusCode())

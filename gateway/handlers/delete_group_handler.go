@@ -7,6 +7,7 @@ import (
 
 func DeleteGroupHandler(redisClient db.GenericDB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		_ = r.Body.Close()
 		groupName := r.PathValue("groupName")
 		if groupName == "" {
 			http.Error(w, "Missing groupName", http.StatusBadRequest)
