@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"ermes-central-repo/config"
 	"ermes-central-repo/db"
 	"ermes-central-repo/gateway/handlers"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
@@ -15,15 +16,35 @@ func NewRouter(redisClient db.GenericDB, wasmPool *wasm.ExecutorPool) *http.Serv
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{ "message": "Hello World" }`)
 	})
-	mux.HandleFunc("GET /token", handlers.RetrieveGroupToken(redisClient, wasmPool))
+	mux.HandleFunc("GET /token", filterMiddlewareSecret(handlers.RetrieveGroupToken(redisClient, wasmPool)))
 
-	mux.HandleFunc("POST /group/{groupName}/{userId}", handlers.AddToGroupHandler(redisClient))
+	mux.HandleFunc("POST /group/{groupName}/{userId}", filterErmesSecret(handlers.AddToGroupHandler(redisClient)))
 
-	mux.HandleFunc("DELETE /group/{groupName}/{userId}", handlers.RemoveFromGroupHandler(redisClient))
+	mux.HandleFunc("DELETE /group/{groupName}/{userId}", filterErmesSecret(handlers.RemoveFromGroupHandler(redisClient)))
 
-	mux.HandleFunc("POST /group/{groupName}", handlers.CreateGroupHandler(redisClient))
+	mux.HandleFunc("POST /group/{groupName}", filterErmesSecret(handlers.CreateGroupHandler(redisClient)))
 
-	mux.HandleFunc("DELETE /group/{groupName}", handlers.DeleteGroupHandler(redisClient))
+	mux.HandleFunc("DELETE /group/{groupName}", filterErmesSecret(handlers.DeleteGroupHandler(redisClient)))
 
 	return mux
+}
+
+func filterErmesSecret(h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-ERMES-SECRET") != config.ErmesSecret() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		h.ServeHTTP(w, r)
+	}
+}
+
+func filterMiddlewareSecret(h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-MIDDLEWARE-SECRET") != config.MiddlewareSecret() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		h.ServeHTTP(w, r)
+	}
 }

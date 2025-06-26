@@ -29,20 +29,10 @@ func NewServer(logger io.Writer) *Server {
 		wasmPool:    wasmPool,
 		redisClient: redisClient,
 		logger:      logger,
-		router:      filterMiddleware(NewRouter(redisClient, wasmPool)),
+		router:      NewRouter(redisClient, wasmPool),
 	}
 	_, _ = fmt.Fprintf(logger, "done \n")
 	return ser
-}
-
-func filterMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-ERMES-SECRET") != config.ErmesSecret() {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
 }
 
 func (s *Server) Close() error {

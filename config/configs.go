@@ -26,6 +26,7 @@ type config struct {
 	HTTPPort          string `envconfig:"HTTP_PORT" default:"8080"`
 	WASMPoolSize      int    `envconfig:"WASM_POOL_SIZE" default:"10"`
 	ErmesSecret       string `envconfig:"ERMES_SECRET" required:"true"`
+	MiddlewareSecret  string `envconfig:"MIDDLEWARE_SECRET" required:"true"`
 }
 
 func loadConfig() {
@@ -90,4 +91,9 @@ func WASMPoolSize() int {
 func ErmesSecret() string {
 	once.Do(loadConfig)
 	return cfg.ErmesSecret
+}
+
+func MiddlewareSecret() string {
+	once.Do(loadConfig)
+	return cfg.MiddlewareSecret
 }
