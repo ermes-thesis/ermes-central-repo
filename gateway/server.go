@@ -3,9 +3,8 @@ package gateway
 import (
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
-	"fmt"
+	"ermes-central-repo/logger"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
-	"io"
 	"net/http"
 )
 
@@ -13,15 +12,15 @@ type Server struct {
 	wasmPool    *wasm.ExecutorPool
 	redisClient db.GenericDB
 	router      http.Handler
-	logger      io.Writer
+	logger      *logger.Logger
 }
 
 func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(logger io.Writer) *Server {
-	_, _ = fmt.Fprintf(logger, "Creating a new Server instance... \n")
+func NewServer(logger *logger.Logger) *Server {
+	logger.Info("Creating a new Server instance... \n")
 
 	wasmPool := wasm.NewExecutorPool(config.WASMPoolSize())
 	redisClient := db.NewRedisClient()
@@ -31,7 +30,7 @@ func NewServer(logger io.Writer) *Server {
 		logger:      logger,
 		router:      NewRouter(redisClient, wasmPool),
 	}
-	_, _ = fmt.Fprintf(logger, "done \n")
+	logger.Info("done\n")
 	return ser
 }
 
