@@ -22,7 +22,7 @@ type customHandler struct {
 func (h *customHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	newAttrs := append([]slog.Attr{}, h.baseAttrs...)
 	newAttrs = append(newAttrs, attrs...)
-	return &customHandler{baseAttrs: newAttrs, writer: h.writer, opts: h.opts, mu: h.mu}
+	return &customHandler{baseAttrs: newAttrs, writer: h.writer, opts: h.opts, mu: &sync.Mutex{}}
 }
 
 func (h *customHandler) WithGroup(name string) slog.Handler {

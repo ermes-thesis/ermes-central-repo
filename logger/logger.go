@@ -35,7 +35,7 @@ func NewLogger(config Config) (*Logger, error) {
 
 	if config.Output != nil {
 		logPath := filepath.Join(config.Output.LogDir, config.Output.LogFileName)
-		err = os.MkdirAll(filepath.Dir(logPath), 0666)
+		err = os.MkdirAll(filepath.Dir(logPath), 0755)
 		if err != nil {
 			return nil, err
 		}
