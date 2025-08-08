@@ -14,12 +14,11 @@ type Logger struct {
 }
 
 type Config struct {
-	Level           slog.Level
-	Format          string
-	Output          *LogFile
-	StdoutEnabled   bool
-	AddSource       bool
-	ComponentPrefix string
+	Level         slog.Level
+	Format        string
+	Output        *LogFile
+	StdoutEnabled bool
+	AddSource     bool
 }
 
 type LogFile struct {
@@ -73,6 +72,7 @@ func NewLogger(config Config) (*Logger, error) {
 		Logger:  slog.New(handler),
 		logFile: logFile,
 	}, nil
+
 }
 
 func (l *Logger) Close() error {

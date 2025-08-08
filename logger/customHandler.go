@@ -13,14 +13,16 @@ import (
 const levelSectionWidth = 8
 
 type customHandler struct {
-	writer          io.Writer
-	opts            slog.HandlerOptions
-	componentPrefix string
-	mu              *sync.Mutex
+	baseAttrs []slog.Attr
+	writer    io.Writer
+	opts      slog.HandlerOptions
+	mu        *sync.Mutex
 }
 
 func (h *customHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return h
+	newAttrs := append([]slog.Attr{}, h.baseAttrs...)
+	newAttrs = append(newAttrs, attrs...)
+	return &customHandler{baseAttrs: newAttrs, writer: h.writer, opts: h.opts, mu: h.mu}
 }
 
 func (h *customHandler) WithGroup(name string) slog.Handler {
@@ -50,11 +52,16 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
+	mergedAttrs := append([]slog.Attr{}, h.baseAttrs...)
 	r.Attrs(func(attr slog.Attr) bool {
-		buf.WriteString(" - ")
-		buf.WriteString(attr.String())
+		mergedAttrs = append(mergedAttrs, attr)
 		return true
 	})
+
+	for _, attr := range mergedAttrs {
+		buf.WriteString(" - ")
+		buf.WriteString(attr.String())
+	}
 
 	buf.WriteString("\n")
 
