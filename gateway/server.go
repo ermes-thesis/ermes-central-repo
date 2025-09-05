@@ -4,6 +4,7 @@ import (
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
 	"ermes-central-repo/logger"
+	"ermes-central-repo/tokenEncoder"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"net/http"
 )
@@ -19,19 +20,23 @@ func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(logger *logger.Logger) *Server {
+func NewServer(logger *logger.Logger) (*Server, error) {
 	logger.Info("Creating a new Server instance... \n")
 
+	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(config.JWTPemPath())
+	if err != nil {
+		return nil, err
+	}
 	wasmPool := wasm.NewExecutorPool(config.WASMPoolSize())
 	redisClient := db.NewRedisClient()
 	ser := &Server{
 		wasmPool:    wasmPool,
 		redisClient: redisClient,
 		logger:      logger,
-		router:      NewRouter(redisClient, wasmPool),
+		router:      NewRouter(redisClient, wasmPool, tknEncoder),
 	}
 	logger.Info("done\n")
-	return ser
+	return ser, nil
 }
 
 func (s *Server) Close() error {

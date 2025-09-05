@@ -1,12 +1,9 @@
 package config
 
 import (
-	"crypto/rsa"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/kelseyhightower/envconfig"
 	"log"
-	"os"
 	"sync"
 	"time"
 )
@@ -17,7 +14,7 @@ var (
 )
 
 type config struct {
-	JWTSecret         string `envconfig:"JWT_SECRET" required:"true"`
+	JWTPemPath        string `envconfig:"JWT_PEM_PATH" required:"true"`
 	JWTExpirationTime int    `envconfig:"JWT_EXPIRATION_TIME" default:"3600"`
 	RedisAddr         string `envconfig:"REDIS_ADDR" default:"redis"`
 	RedisPort         string `envconfig:"REDIS_PORT" default:"6379"`
@@ -32,25 +29,15 @@ type config struct {
 func loadConfig() {
 	cfg = &config{}
 	err := envconfig.Process("", cfg)
-	fmt.Println(cfg)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 	fmt.Println(cfg)
 }
 
-func JWTSecret() *rsa.PrivateKey {
+func JWTPemPath() string {
 	once.Do(loadConfig)
-	signBytes, err := os.ReadFile(cfg.JWTSecret)
-	if err != nil {
-		log.Fatal("Error reading JWT secret file")
-	}
-	signKey, err := jwt.ParseRSAPrivateKeyFromPEM(signBytes)
-	if err != nil {
-		log.Fatal("Error parsing JWT secret file")
-	}
-
-	return signKey
+	return cfg.JWTPemPath
 }
 
 func JWTExpirationTime() time.Duration {

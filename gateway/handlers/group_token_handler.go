@@ -2,17 +2,15 @@ package handlers
 
 import (
 	"encoding/json"
-	"ermes-central-repo/config"
 	"ermes-central-repo/db"
+	"ermes-central-repo/tokenEncoder"
 	"fmt"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"strings"
-	"time"
 )
 
-func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = r.Body.Close()
 		userId, httpErr := checkHTTPReqAuth(r, wasmPool)
@@ -20,21 +18,15 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool) htt
 			http.Error(w, httpErr.Error(), httpErr.StatusCode())
 			return
 		}
-		res, err := rdbClient.GetUserGroups(userId)
+		groups, err := rdbClient.GetUserGroups(userId)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error while retrieving access group %s", err), http.StatusInternalServerError)
 			return
 		}
 
-		groupToken := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-			"issuer":      userId,
-			"permissions": res,
-			"exp":         time.Now().Add(time.Second * config.JWTExpirationTime()).Unix(), // expires in 1 hour
-		})
-
-		groupTokenString, err := groupToken.SignedString(config.JWTSecret())
+		groupTokenString, err := tokenEncoder.EncodeGroupToken(groups, userId)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error while encoding access group token %s", err), http.StatusInternalServerError)
 			return
 		}
 

@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	log, err := logger.NewLogger(logger.Config{
+	baseLogger, err := logger.NewLogger(logger.Config{
 		Level:  slog.LevelInfo,
 		Format: "text",
 		Output: &logger.LogFile{
@@ -27,7 +27,7 @@ func main() {
 		AddSource:     false,
 		StdoutEnabled: true,
 	})
-	defer log.Close()
+	defer baseLogger.Close()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	if err := run(ctx, log); err != nil {
+	if err := run(ctx, baseLogger); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
@@ -46,7 +46,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 	defer cancel()
 
 	//Run server
-	ser := gateway.NewServer(log)
+	ser, err := gateway.NewServer(log)
+	if err != nil {
+		return err
+	}
 
 	httpServer := &http.Server{
 		Addr:    net.JoinHostPort("", config.HTTPPort()),
@@ -57,7 +60,7 @@ func run(ctx context.Context, log *logger.Logger) error {
 		log.Info("Server correctly created and listening on port", "http_port", config.HTTPPort())
 
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			fmt.Fprintf(os.Stderr, "error listening and serving: %s\n", err)
+			log.Errorf("error listening and serving: %s\n", err)
 		}
 	}()
 
@@ -70,10 +73,10 @@ func run(ctx context.Context, log *logger.Logger) error {
 		shutdownCtx, cancel := context.WithTimeout(shutdownCtx, 10*time.Second)
 		defer cancel()
 		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
+			log.Errorf("error shutting down http server: %s\n", err)
 		}
 		if err := ser.Close(); err != nil {
-			fmt.Fprintf(os.Stderr, "error shutting down http server: %s\n", err)
+			log.Errorf("error shutting down http server: %s\n", err)
 		}
 		log.Info("http server shut down successfully\n")
 	}()
