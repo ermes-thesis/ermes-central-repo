@@ -1,19 +1,24 @@
 package gateway
 
 import (
+	"caches"
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
 	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"net/http"
+
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 )
 
 type Server struct {
-	wasmPool    *wasm.ExecutorPool
-	redisClient db.GenericDB
-	router      http.Handler
-	logger      *logger.Logger
+	wasmPool     *wasm.ExecutorPool
+	redisClient  db.GenericDB
+	router       *http.ServeMux
+	tokenEncoder tokenEncoder.TokenEncoder
+	cache        *caches.MetadataBinaryCache
+	activeAuthFn string
+	logger       *logger.Logger
 }
 
 func (s *Server) Router() http.Handler {
@@ -29,12 +34,20 @@ func NewServer(logger *logger.Logger) (*Server, error) {
 	}
 	wasmPool := wasm.NewExecutorPool(config.WASMPoolSize())
 	redisClient := db.NewRedisClient()
-	ser := &Server{
-		wasmPool:    wasmPool,
-		redisClient: redisClient,
-		logger:      logger,
-		router:      NewRouter(redisClient, wasmPool, tknEncoder),
+	cache, err := caches.NewMetadataBinaryCache()
+	if err != nil {
+		return nil, err
 	}
+
+	ser := &Server{
+		wasmPool:     wasmPool,
+		redisClient:  redisClient,
+		logger:       logger,
+		tokenEncoder: tknEncoder,
+		cache:        cache,
+		router:       http.NewServeMux(),
+	}
+	ser.initRouter()
 	logger.Info("done\n")
 	return ser, nil
 }

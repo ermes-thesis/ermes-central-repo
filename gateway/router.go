@@ -2,32 +2,28 @@ package gateway
 
 import (
 	"ermes-central-repo/config"
-	"ermes-central-repo/db"
 	"ermes-central-repo/gateway/handlers"
-	"ermes-central-repo/tokenEncoder"
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"io"
 	"net/http"
 )
 
-func NewRouter(redisClient db.GenericDB, wasmPool *wasm.ExecutorPool, tknEncoder tokenEncoder.TokenEncoder) *http.ServeMux {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func (s *Server) initRouter() {
+	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{ "message": "Hello World" }`)
 	})
-	mux.HandleFunc("GET /token", filterMiddlewareSecret(handlers.RetrieveGroupToken(redisClient, wasmPool, tknEncoder)))
+	s.router.HandleFunc("GET /token", filterMiddlewareSecret(handlers.RetrieveGroupToken(s.redisClient, s.wasmPool, s.tokenEncoder, &s.activeAuthFn)))
 
-	mux.HandleFunc("POST /group/{groupName}/{userId}", filterErmesSecret(handlers.AddToGroupHandler(redisClient)))
+	s.router.HandleFunc("POST /group/{groupName}/{userId}", filterErmesSecret(handlers.AddToGroupHandler(s.redisClient)))
 
-	mux.HandleFunc("DELETE /group/{groupName}/{userId}", filterErmesSecret(handlers.RemoveFromGroupHandler(redisClient)))
+	s.router.HandleFunc("DELETE /group/{groupName}/{userId}", filterErmesSecret(handlers.RemoveFromGroupHandler(s.redisClient)))
 
-	mux.HandleFunc("POST /group/{groupName}", filterErmesSecret(handlers.CreateGroupHandler(redisClient)))
+	s.router.HandleFunc("POST /group/{groupName}", filterErmesSecret(handlers.CreateGroupHandler(s.redisClient)))
 
-	mux.HandleFunc("DELETE /group/{groupName}", filterErmesSecret(handlers.DeleteGroupHandler(redisClient)))
+	s.router.HandleFunc("DELETE /group/{groupName}", filterErmesSecret(handlers.DeleteGroupHandler(s.redisClient)))
 
-	return mux
+	s.router.HandleFunc("PUT /set-auth-function/{name}/{version}", filterDevSecret(handlers.SetAuthFunctionHandler(s.cache, &s.activeAuthFn)))
+	s.router.HandleFunc("PUT /set-auth-function/{name}", filterDevSecret(handlers.SetAuthFunctionHandler(s.cache, &s.activeAuthFn)))
 }
 
 func filterErmesSecret(h http.Handler) http.HandlerFunc {
@@ -43,6 +39,16 @@ func filterErmesSecret(h http.Handler) http.HandlerFunc {
 func filterMiddlewareSecret(h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-MIDDLEWARE-SECRET") != config.MiddlewareSecret() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		h.ServeHTTP(w, r)
+	}
+}
+
+func filterDevSecret(h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-DEV-SECRET") != config.DevSecret() {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}

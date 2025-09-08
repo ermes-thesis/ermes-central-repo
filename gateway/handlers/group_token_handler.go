@@ -2,18 +2,21 @@ package handlers
 
 import (
 	"encoding/json"
+	"ermes-central-repo/config"
 	"ermes-central-repo/db"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"net/http"
+	"path/filepath"
 	"strings"
+
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 )
 
-func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = r.Body.Close()
-		userId, httpErr := checkHTTPReqAuth(r, wasmPool)
+		userId, httpErr := checkHTTPReqAuth(r, wasmPool, activeAuthFn)
 		if httpErr != nil {
 			http.Error(w, httpErr.Error(), httpErr.StatusCode())
 			return
@@ -43,7 +46,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tok
 	}
 }
 
-func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool) (string, *HttpError) {
+func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool, activeAuthFn *string) (string, *HttpError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "ERROR_ID", &NoAuthHeaderErr
@@ -55,7 +58,7 @@ func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool) (string, *Ht
 
 	authToken := strings.TrimPrefix(authHeader, AuthPrefix)
 	executor := wasmPool.Acquire()
-	userId, fnErrCode := executor.InvokeAuthFn("auth", authToken)
+	userId, fnErrCode := executor.InvokeAuthFn(filepath.Join(config.FunctionCacheBinDir(), *activeAuthFn), authToken)
 	executor.Release()
 
 	if fnErrCode != 200 {
