@@ -22,6 +22,6 @@ func SetAuthFunctionHandler(cache *caches.MetadataBinaryCache, activeAuthFun *st
 
 		*activeAuthFun = metadata.Name + "@" + metadata.Version
 
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 	}
 }
