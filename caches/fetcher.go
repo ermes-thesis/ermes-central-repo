@@ -47,6 +47,10 @@ func (f *RemoteBundleFetcher) Fetch(functionName string) (*FunctionBundle, error
 		return nil, err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to fetch function %s:%s, status code: %d, body: %s", name, version, resp.StatusCode, string(body))
+	}
+
 	var fnBundle FunctionBundle
 	err = json.Unmarshal(body, &fnBundle)
 	return &fnBundle, err
