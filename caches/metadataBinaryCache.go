@@ -50,7 +50,7 @@ func (c *MetadataBinaryCache) Set(functionMetadata metadata.FunctionMetadata, bi
 	functionNameString := functionMetadata.Name + "@" + functionMetadata.Version
 	binPath := filepath.Join(c.binDir, functionNameString)
 
-	err := os.WriteFile(binPath, binary, 0644)
+	err := os.WriteFile(binPath+".wasm", binary, 0644)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (c *MetadataBinaryCache) GetWithBinary(functionName string, functionVersion
 	functionNameString := functionName + "@" + functionVersion
 	binPath := filepath.Join(c.binDir, functionNameString)
 	if fnMetadata, ok := c.cache.Get(functionNameString); ok {
-		bin, err := os.ReadFile(binPath)
+		bin, err := os.ReadFile(binPath + ".wasm")
 		if err != nil {
 			return nil, nil, false, err
 		}
