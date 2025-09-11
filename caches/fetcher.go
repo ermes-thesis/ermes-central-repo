@@ -3,6 +3,7 @@ package caches
 import (
 	"caches/metadata"
 	"encoding/json"
+	"ermes-central-repo/config"
 	"fmt"
 	"io"
 	"net/http"
@@ -33,6 +34,8 @@ func (f *RemoteBundleFetcher) Fetch(functionName string, functionVersion string)
 		return nil, err
 	}
 
+	req.Header.Set("X-ERMES-SECRET", config.ErmesSecret())
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -59,6 +62,7 @@ func (f *RemoteBundleFetcher) FetchLatest(functionName string, cachedVersion str
 		return nil, err
 	}
 	req.Header.Set("If-None-Match", cachedVersion)
+	req.Header.Set("X-ERMES-SECRET", config.ErmesSecret())
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
