@@ -2,24 +2,30 @@ package caches
 
 import (
 	"caches/metadata"
-	"config"
-	"github.com/stretchr/testify/require"
+	"ermes-central-repo/config"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestBinaryCache_SetAndGet(t *testing.T) {
+	t.Setenv("JWT_EXPIRATION_TIME", "3600")
+	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
+	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
+	t.Setenv("ERMES_SECRET", "very secret")
+	t.Setenv("DEV_SECRET", "super secret")
+
+	t.Setenv("FUNCTION_CACHE_SIZE", "20")
+	t.Setenv("FUNCTION_CACHE_TTL", strconv.FormatInt((1*time.Second).Nanoseconds(), 10))
 	tmpDir := t.TempDir()
+	t.Setenv("FUNCTION_CACHE_BIN_DIR", tmpDir)
+	config.LoadConfig()
 
-	cfg := config.MetadataBinaryCacheConfig{
-		Size:   10,
-		Ttl:    1 * time.Second,
-		BinDir: tmpDir,
-	}
-
-	cache, err := NewMetadataBinaryCache(cfg)
+	cache, err := NewMetadataBinaryCache()
 	require.NoError(t, err)
 
 	data := []byte("test-content-binary")
@@ -51,15 +57,19 @@ func TestBinaryCache_SetAndGet(t *testing.T) {
 }
 
 func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
+	t.Setenv("JWT_EXPIRATION_TIME", "3600")
+	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
+	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
+	t.Setenv("ERMES_SECRET", "very secret")
+	t.Setenv("DEV_SECRET", "super secret")
+
+	t.Setenv("FUNCTION_CACHE_SIZE", "1")
+	t.Setenv("FUNCTION_CACHE_TTL", "0")
 	tmpDir := t.TempDir()
+	t.Setenv("FUNCTION_CACHE_BIN_DIR", tmpDir)
+	config.LoadConfig()
 
-	cfg := config.MetadataBinaryCacheConfig{
-		Size:   1, // Size 1, so that with two set the first one is evicted
-		Ttl:    0,
-		BinDir: tmpDir,
-	}
-
-	cache, err := NewMetadataBinaryCache(cfg)
+	cache, err := NewMetadataBinaryCache()
 	require.NoError(t, err)
 
 	fn1 := "func1"
@@ -105,15 +115,19 @@ func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
 }
 
 func TestBinaryCache_GetMissing(t *testing.T) {
+	t.Setenv("JWT_EXPIRATION_TIME", "3600")
+	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
+	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
+	t.Setenv("ERMES_SECRET", "very secret")
+	t.Setenv("DEV_SECRET", "super secret")
+
+	t.Setenv("FUNCTION_CACHE_SIZE", "20")
+	t.Setenv("FUNCTION_CACHE_TTL", strconv.FormatInt((1*time.Second).Nanoseconds(), 10))
 	tmpDir := t.TempDir()
+	t.Setenv("FUNCTION_CACHE_BIN_DIR", tmpDir)
+	config.LoadConfig()
 
-	cfg := config.MetadataBinaryCacheConfig{
-		Size:   10,
-		Ttl:    1 * time.Second,
-		BinDir: tmpDir,
-	}
-
-	cache, err := NewMetadataBinaryCache(cfg)
+	cache, err := NewMetadataBinaryCache()
 	require.NoError(t, err)
 
 	// Nothing set yet

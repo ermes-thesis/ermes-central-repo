@@ -33,7 +33,7 @@ type config struct {
 	FunctionCacheTtl        int    `envconfig:"FUNCTION_CACHE_TTL" default:"0"`
 }
 
-func loadConfig() {
+func LoadConfig() {
 	cfg = &config{}
 	err := envconfig.Process("", cfg)
 	if err != nil {
@@ -43,81 +43,81 @@ func loadConfig() {
 }
 
 func JWTPemPath() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.JWTPemPath
 }
 
 func JWTExpirationTime() time.Duration {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return time.Duration(cfg.JWTExpirationTime)
 }
 
 func RedisAddr() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.RedisAddr
 }
 
 func RedisPort() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.RedisPort
 }
 
 func RedisPassword() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.RedisPassword
 }
 
 func RedisDB() int {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.RedisDB
 }
 
 func HTTPPort() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.HTTPPort
 }
 
 func WASMPoolSize() int {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.WASMPoolSize
 }
 
 func ErmesSecret() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.ErmesSecret
 }
 
 func MiddlewareSecret() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.MiddlewareSecret
 }
 
 func DevSecret() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.DevSecret
 }
 
 func FunctionRegistryAddress() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.FunctionRegistryAddress
 }
 
 func FunctionRegistryPort() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.FunctionRegistryPort
 }
 
 func FunctionCacheSize() int {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.FunctionCacheSize
 }
 
 func FunctionCacheBinDir() string {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return cfg.FunctionCacheBinDir
 }
 
 func FunctionCacheTtl() time.Duration {
-	once.Do(loadConfig)
+	once.Do(LoadConfig)
 	return time.Duration(cfg.FunctionCacheTtl)
 }
