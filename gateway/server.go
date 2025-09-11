@@ -16,7 +16,7 @@ type Server struct {
 	redisClient  db.GenericDB
 	router       *http.ServeMux
 	tokenEncoder tokenEncoder.TokenEncoder
-	cache        *caches.MetadataBinaryCache
+	cache        caches.FunctionCache
 	activeAuthFn string
 	logger       *logger.Logger
 }
@@ -34,7 +34,7 @@ func NewServer(logger *logger.Logger) (*Server, error) {
 	}
 	wasmPool := wasm.NewExecutorPool(config.WASMPoolSize())
 	redisClient := db.NewRedisClient()
-	cache, err := caches.NewMetadataBinaryCache()
+	cache, err := caches.NewDefaultFunctionCache()
 	if err != nil {
 		return nil, err
 	}

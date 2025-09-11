@@ -3,21 +3,16 @@ package caches
 import (
 	"caches/metadata"
 	"ermes-central-repo/config"
-	"fmt"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/sync/singleflight"
 )
 
 // MetadataBinaryCache stores compiled binaries on disk and keeps track of them
 // using an underlying BaseCache. Evicted binaries are automatically removed
 // from disk.
 type MetadataBinaryCache struct {
-	cache   *BaseCache[metadata.FunctionMetadata]
-	binDir  string
-	fetcher Fetcher[*FunctionBundle]
-	group   singleflight.Group
+	cache  *BaseCache[metadata.FunctionMetadata]
+	binDir string
 }
 
 // NewMetadataBinaryCache creates a new MetadataBinaryCache based on the given configuration.
@@ -38,10 +33,8 @@ func NewMetadataBinaryCache() (*MetadataBinaryCache, error) {
 	}
 
 	return &MetadataBinaryCache{
-		cache:   binCache,
-		binDir:  config.FunctionCacheBinDir(),
-		group:   singleflight.Group{},
-		fetcher: NewRemoteBundleFetcher(fmt.Sprintf("http://%s:%s", config.FunctionRegistryAddress(), config.FunctionRegistryPort())),
+		cache:  binCache,
+		binDir: config.FunctionCacheBinDir(),
 	}, nil
 }
 
@@ -53,9 +46,9 @@ func NewMetadataBinaryCache() (*MetadataBinaryCache, error) {
 //
 // Returns:
 //   - error: non-nil if writing the file to disk fails
-func (c *MetadataBinaryCache) set(functionMetadata metadata.FunctionMetadata, binary []byte) error {
+func (c *MetadataBinaryCache) Set(functionMetadata metadata.FunctionMetadata, binary []byte) error {
 	functionNameString := functionMetadata.Name + "@" + functionMetadata.Version
-	binPath := filepath.Join(c.binDir, functionNameString+".wasm")
+	binPath := filepath.Join(c.binDir, functionNameString)
 
 	err := os.WriteFile(binPath, binary, 0644)
 	if err != nil {
@@ -66,38 +59,20 @@ func (c *MetadataBinaryCache) set(functionMetadata metadata.FunctionMetadata, bi
 	return nil
 }
 
-func (c *MetadataBinaryCache) Get(functionName string, functionVersion string) (*metadata.FunctionMetadata, error) {
+func (c *MetadataBinaryCache) GetWithBinary(functionName string, functionVersion string) ([]byte, *metadata.FunctionMetadata, bool, error) {
 	functionNameString := functionName + "@" + functionVersion
+	binPath := filepath.Join(c.binDir, functionNameString)
 	if fnMetadata, ok := c.cache.Get(functionNameString); ok {
-		return &fnMetadata, nil
-	} else {
-		if fnBundle, err := c.fetchAndStore(functionName, functionVersion); err == nil {
-			return &fnBundle.Metadata, nil
-		} else {
-			return nil, err
+		bin, err := os.ReadFile(binPath)
+		if err != nil {
+			return nil, nil, false, err
 		}
+		return bin, &fnMetadata, true, nil
 	}
+	return nil, nil, false, nil
 }
 
-func (c *MetadataBinaryCache) fetchAndStore(functionName string, functionVersion string) (*FunctionBundle, error) {
+func (c *MetadataBinaryCache) Get(functionName string, functionVersion string) (metadata.FunctionMetadata, bool) {
 	functionNameString := functionName + "@" + functionVersion
-	fetchedValue, err, _ := c.group.Do(functionNameString, func() (any, error) {
-		bundle, err := c.fetcher.Fetch(functionNameString)
-		if err != nil {
-			return nil, err
-		}
-		if bundle == nil || len(bundle.Binary) == 0 {
-			return nil, fmt.Errorf("invalid bundle from registry")
-		}
-
-		if err = c.set(bundle.Metadata, bundle.Binary); err != nil {
-			return nil, err
-		}
-
-		return bundle, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return fetchedValue.(*FunctionBundle), nil
+	return c.cache.Get(functionNameString)
 }

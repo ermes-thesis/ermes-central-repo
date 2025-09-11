@@ -145,6 +145,19 @@ func (c *BaseCache[T]) Set(key string, value T) {
 	})
 }
 
-func (c *BaseCache[T]) Contains(key string) bool {
-	return c.cache.Contains(key)
+func (c *BaseCache[T]) GetWithStatus(key string) (T, bool, bool) {
+	var zero T
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	item, ok := c.cache.Get(key)
+	if !ok {
+		return zero, false, false
+	}
+
+	if c.ttl == 0 || time.Since(item.Timestamp) < c.ttl {
+		return item.Value, true, false
+	}
+	return item.Value, true, true
 }

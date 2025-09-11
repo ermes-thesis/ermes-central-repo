@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func SetAuthFunctionHandler(cache *caches.MetadataBinaryCache, activeAuthFun *string) http.HandlerFunc {
+func SetAuthFunctionHandler(cache caches.FunctionCache, activeAuthFun *string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_ = r.Body.Close()
 
@@ -16,7 +16,7 @@ func SetAuthFunctionHandler(cache *caches.MetadataBinaryCache, activeAuthFun *st
 			fnVersion = "latest"
 		}
 
-		metadata, err := cache.Get(fnName, fnVersion)
+		metadata, err := cache.GetMetadata(fnName, fnVersion)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
