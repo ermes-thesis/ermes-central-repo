@@ -1,9 +1,8 @@
 package caches
 
 import (
-	"caches/metadata"
 	"encoding/json"
-	"ermes-central-repo/config"
+	"ermes-central-repo/caches/metadata"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,11 +19,12 @@ type Fetcher[T any] interface {
 }
 
 type RemoteBundleFetcher struct {
-	BaseURL string
+	BaseURL     string
+	ermesSecret string
 }
 
-func NewRemoteBundleFetcher(baseURL string) *RemoteBundleFetcher {
-	return &RemoteBundleFetcher{BaseURL: baseURL}
+func NewRemoteBundleFetcher(baseURL string, ermesSecret string) *RemoteBundleFetcher {
+	return &RemoteBundleFetcher{BaseURL: baseURL, ermesSecret: ermesSecret}
 }
 
 func (f *RemoteBundleFetcher) Fetch(functionName string, functionVersion string) (*FunctionBundle, error) {
@@ -34,7 +34,7 @@ func (f *RemoteBundleFetcher) Fetch(functionName string, functionVersion string)
 		return nil, err
 	}
 
-	req.Header.Set("X-ERMES-SECRET", config.ErmesSecret())
+	req.Header.Set("X-ERMES-SECRET", f.ermesSecret)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -62,7 +62,7 @@ func (f *RemoteBundleFetcher) FetchLatest(functionName string, cachedVersion str
 		return nil, err
 	}
 	req.Header.Set("If-None-Match", cachedVersion)
-	req.Header.Set("X-ERMES-SECRET", config.ErmesSecret())
+	req.Header.Set("X-ERMES-SECRET", f.ermesSecret)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

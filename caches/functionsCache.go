@@ -1,11 +1,12 @@
 package caches
 
 import (
-	"caches/metadata"
+	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
+	"ermes-central-repo/logger"
 	"fmt"
-
 	"golang.org/x/sync/singleflight"
+	"slices"
 )
 
 type FunctionCache interface {
@@ -18,14 +19,15 @@ type FunctionCacheImpl struct {
 	LatestVersions   *BaseCache[string]
 	fetcher          Fetcher[*FunctionBundle]
 	group            singleflight.Group
+	log              *logger.Logger
 }
 
-func NewFunctionCache(fetcher Fetcher[*FunctionBundle]) (*FunctionCacheImpl, error) {
-	binCache, err := NewMetadataBinaryCache()
+func NewFunctionCache(cfg *config.Config, fetcher Fetcher[*FunctionBundle], log *logger.Logger) (*FunctionCacheImpl, error) {
+	binCache, err := NewMetadataBinaryCache(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
 	}
-	latest, err := NewBaseCache[string](config.FunctionCacheSize(), config.FunctionCacheTtl())
+	latest, err := NewBaseCache[string](cfg.FunctionCacheSize, cfg.FunctionCacheTtl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating latest versions cache: %v", err)
 	}
@@ -34,15 +36,16 @@ func NewFunctionCache(fetcher Fetcher[*FunctionBundle]) (*FunctionCacheImpl, err
 		MetadataBinaries: binCache,
 		LatestVersions:   latest,
 		fetcher:          fetcher,
+		log:              log,
 	}, nil
 }
 
-func NewDefaultFunctionCache() (*FunctionCacheImpl, error) {
-	binCache, err := NewMetadataBinaryCache()
+func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionCacheImpl, error) {
+	binCache, err := NewMetadataBinaryCache(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
 	}
-	latest, err := NewBaseCache[string](config.FunctionCacheSize(), config.FunctionCacheTtl())
+	latest, err := NewBaseCache[string](cfg.FunctionCacheSize, cfg.FunctionCacheTtl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating latest versions cache: %v", err)
 	}
@@ -50,8 +53,9 @@ func NewDefaultFunctionCache() (*FunctionCacheImpl, error) {
 	return &FunctionCacheImpl{
 		MetadataBinaries: binCache,
 		LatestVersions:   latest,
-		fetcher:          NewRemoteBundleFetcher(fmt.Sprintf("http://%s:%s", config.FunctionRegistryAddress(), config.FunctionRegistryPort())),
+		fetcher:          NewRemoteBundleFetcher(fmt.Sprintf("http://%s:%s", cfg.FunctionRegistryAddress, cfg.FunctionRegistryPort), cfg.ErmesSecret),
 		group:            singleflight.Group{},
+		log:              log,
 	}, nil
 }
 
@@ -59,24 +63,48 @@ func (f *FunctionCacheImpl) GetBinary(functionName string, functionVersion strin
 	if functionVersion == "latest" {
 		bundle, err := f.resolveLatest(functionName, "binary")
 		if err != nil {
+			f.log.Error("Failed to resolve latest binary bundle.",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+				"error", err,
+			)
 			return nil, err
 		}
 		if bundle != nil {
+			f.log.Info("Returning latest binary bundle",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+			)
 			return bundle.Binary, nil
 		}
 		panic("This should be unreachable!!!")
 	}
 
-	bin, _, ok, err := f.MetadataBinaries.GetWithBinary(functionName, functionVersion)
+	bin, meta, ok, err := f.MetadataBinaries.GetWithBinary(functionName, functionVersion)
 	if err != nil {
+		f.log.Error("Failed to get binary from cache.",
+			"fn_name", functionName,
+			"fn_version", functionVersion,
+			"fn_metadata", meta,
+			"error", err,
+		)
 		return nil, err
 	}
 	if ok {
+		f.log.Info("Binary retrieve from cache",
+			"fn_name", functionName,
+			"fn_version", functionVersion,
+			"fn_metadata", meta,
+		)
 		return bin, nil
 	}
 
 	fnBundle, err := f.fetchAndStore(functionName, functionVersion)
 	if err != nil {
+		f.log.Error("Failed to fetch and store binary bundle.",
+			"fn_name", functionName,
+			"fn_version", functionVersion,
+			"error", err)
 		return nil, err
 	}
 	return fnBundle.Binary, err
@@ -86,9 +114,18 @@ func (f *FunctionCacheImpl) GetMetadata(functionName string, functionVersion str
 	if functionVersion == "latest" {
 		bundle, err := f.resolveLatest(functionName, "metadata")
 		if err != nil {
+			f.log.Error("Failed to resolve latest metadata bundle.",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+				"error", err,
+			)
 			return nil, err
 		}
 		if bundle != nil {
+			f.log.Info("Returning latest metadata bundle",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+			)
 			return &bundle.Metadata, nil
 		}
 		panic("This should be unreachable!!!")
@@ -96,14 +133,24 @@ func (f *FunctionCacheImpl) GetMetadata(functionName string, functionVersion str
 
 	meta, ok := f.MetadataBinaries.Get(functionName, functionVersion)
 	if ok {
+		f.log.Info("Metadata retrieved from cache",
+			"fn_name", functionName,
+			"fn_version", functionVersion,
+			"fn_metadata", meta,
+		)
 		return &meta, nil
 	}
 
 	fnBundle, err := f.fetchAndStore(functionName, functionVersion)
 	if err != nil {
+		f.log.Error("Failed to fetch and store metadata bundle.",
+			"fn_name", functionName,
+			"fn_version", functionVersion,
+			"error", err,
+		)
 		return nil, err
 	}
-	return &fnBundle.Metadata, err
+	return &fnBundle.Metadata, nil
 }
 
 func (f *FunctionCacheImpl) getSnapshot(functionName string, functionVersion string, want string) (*FunctionBundle, error) {
@@ -166,8 +213,18 @@ func (f *FunctionCacheImpl) resolveLatest(functionName, want string) (*FunctionB
 
 func (f *FunctionCacheImpl) store(bundle *FunctionBundle) error {
 	if err := f.MetadataBinaries.Set(bundle.Metadata, bundle.Binary); err != nil {
+		f.log.Error("Failed to store bundle in cache",
+			"fn_binary", append(slices.Clone(bundle.Binary[:min(len(bundle.Binary), 30)])),
+			"fn_version", bundle.Metadata.Version,
+			"error", err,
+		)
 		return err
 	}
+
+	f.log.Info("Bundle stored in cache",
+		"fn_binary", append(slices.Clone(bundle.Binary[:min(len(bundle.Binary), 30)])),
+		"fn_version", bundle.Metadata.Version,
+	)
 	return nil
 }
 
@@ -178,21 +235,38 @@ func (f *FunctionCacheImpl) fetchAndStore(functionName string, functionVersion s
 
 	key := functionName + "@" + functionVersion
 	fetchedValue, err, _ := f.group.Do(key, func() (any, error) {
-
 		bundle, err := f.fetcher.Fetch(functionName, functionVersion)
 		if err != nil {
+			f.log.Error("Failed to fetch function bundle.",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+				"error", err,
+			)
 			return nil, err
 		}
 
 		if bundle == nil || len(bundle.Binary) == 0 {
+			f.log.Error("Fetched invalid bundle.",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+			)
 			return nil, fmt.Errorf("invalid bundle from registry")
 		}
 
 		err = f.store(bundle)
 		if err != nil {
+			f.log.Error("Failed to store bundle.",
+				"fn_name", functionName,
+				"fn_version", functionVersion,
+				"error", err,
+			)
 			return nil, err
 		}
 
+		f.log.Info("Function bundle fetched and stored successfully.",
+			"fn_name", functionName,
+			"fn_version", functionVersion,
+		)
 		return bundle, nil
 	})
 

@@ -1,123 +1,91 @@
 package config
 
 import (
+	"ermes-central-repo/logger"
 	"fmt"
-	"log"
-	"sync"
+	"github.com/spf13/viper"
+	"os"
 	"time"
-
-	"github.com/kelseyhightower/envconfig"
 )
 
-var (
-	cfg  *config
-	once sync.Once
-)
-
-type config struct {
-	JWTPemPath              string `envconfig:"JWT_PEM_PATH" required:"true"`
-	JWTExpirationTime       int    `envconfig:"JWT_EXPIRATION_TIME" default:"3600"`
-	RedisAddr               string `envconfig:"REDIS_ADDR" default:"redis"`
-	RedisPort               string `envconfig:"REDIS_PORT" default:"6379"`
-	RedisPassword           string `envconfig:"REDIS_PASSWORD"`
-	RedisDB                 int    `envconfig:"REDIS_DB" default:"0"`
-	HTTPPort                string `envconfig:"HTTP_PORT" default:"8080"`
-	WASMPoolSize            int    `envconfig:"WASM_POOL_SIZE" default:"10"`
-	ErmesSecret             string `envconfig:"ERMES_SECRET" required:"true"`
-	MiddlewareSecret        string `envconfig:"MIDDLEWARE_SECRET" required:"true"`
-	DevSecret               string `envconfig:"DEV_SECRET" required:"true"`
-	FunctionRegistryAddress string `envconfig:"FUNCTION_REGISTRY_ADDRESS" default:"localhost"`
-	FunctionRegistryPort    string `envconfig:"FUNCTION_REGISTRY_PORT" default:"8080"`
-	FunctionCacheSize       int    `envconfig:"FUNCTION_CACHE_SIZE" default:"100"`
-	FunctionCacheBinDir     string `envconfig:"FUNCTION_CACHE_BIN_DIR" default:"./function_cache"`
-	FunctionCacheTtl        int    `envconfig:"FUNCTION_CACHE_TTL" default:"0"`
+type Config struct {
+	JWTPemPath              string        `mapstructure:"jwt_pem_path"`
+	JWTExpirationTime       time.Duration `mapstructure:"jwt_expiration_time"`
+	RedisAddr               string        `mapstructure:"redis_addr"`
+	RedisPort               string        `mapstructure:"redis_port"`
+	RedisPassword           string        `mapstructure:"redis_password"`
+	RedisDB                 int           `mapstructure:"redis_db"`
+	HTTPPort                string        `mapstructure:"http_port"`
+	WASMPoolSize            int           `mapstructure:"wasm_pool_size"`
+	ErmesSecret             string        `mapstructure:"ermes_secret"`
+	MiddlewareSecret        string        `mapstructure:"middleware_secret"`
+	DevSecret               string        `mapstructure:"dev_secret"`
+	FunctionRegistryAddress string        `mapstructure:"function_registry_address"`
+	FunctionRegistryPort    string        `mapstructure:"function_registry_port"`
+	FunctionCacheSize       int           `mapstructure:"function_cache_size"`
+	FunctionCacheBinDir     string        `mapstructure:"function_cache_bin_dir"`
+	FunctionCacheTtl        time.Duration `mapstructure:"function_cache_ttl"`
 }
 
-func LoadConfig() {
-	cfg = &config{}
-	err := envconfig.Process("", cfg)
-	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+func LoadConfig(cfgPath string, log *logger.Logger) (*Config, error) {
+	if log == nil {
+		return nil, fmt.Errorf("logger is nil")
 	}
-	fmt.Println(cfg)
-}
 
-func JWTPemPath() string {
-	once.Do(LoadConfig)
-	return cfg.JWTPemPath
-}
+	if cfgPath == "" {
+		cfgPath = "./config.yml"
+	}
+	log.Infof("Using config file: %s", cfgPath)
 
-func JWTExpirationTime() time.Duration {
-	once.Do(LoadConfig)
-	return time.Duration(cfg.JWTExpirationTime)
-}
+	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("config file %s does not exist", cfgPath)
+	}
 
-func RedisAddr() string {
-	once.Do(LoadConfig)
-	return cfg.RedisAddr
-}
+	v := viper.New()
 
-func RedisPort() string {
-	once.Do(LoadConfig)
-	return cfg.RedisPort
-}
+	v.SetConfigFile(cfgPath)
+	v.SetConfigType("yaml")
 
-func RedisPassword() string {
-	once.Do(LoadConfig)
-	return cfg.RedisPassword
-}
+	v.SetDefault("jwt_expiration_time", "3600s")
+	v.SetDefault("redis_addr", "redis")
+	v.SetDefault("redis_port", "6379")
+	v.SetDefault("redis_db", "0")
+	v.SetDefault("http_port", "8080")
+	v.SetDefault("wasm_pool_size", 10)
+	v.SetDefault("function_registry_address", "localhost")
+	v.SetDefault("function_registry_port", "8080")
+	v.SetDefault("function_cache_size", 100)
+	v.SetDefault("function_cache_bin_dir", "./function_cache")
+	v.SetDefault("function_cache_ttl", 0)
 
-func RedisDB() int {
-	once.Do(LoadConfig)
-	return cfg.RedisDB
-}
+	v.AutomaticEnv()
 
-func HTTPPort() string {
-	once.Do(LoadConfig)
-	return cfg.HTTPPort
-}
+	v.SetEnvPrefix("")
 
-func WASMPoolSize() int {
-	once.Do(LoadConfig)
-	return cfg.WASMPoolSize
-}
+	if err := v.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read config file: %s", err)
+	}
 
-func ErmesSecret() string {
-	once.Do(LoadConfig)
-	return cfg.ErmesSecret
-}
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config file: %s", err)
+	}
 
-func MiddlewareSecret() string {
-	once.Do(LoadConfig)
-	return cfg.MiddlewareSecret
-}
-
-func DevSecret() string {
-	once.Do(LoadConfig)
-	return cfg.DevSecret
-}
-
-func FunctionRegistryAddress() string {
-	once.Do(LoadConfig)
-	return cfg.FunctionRegistryAddress
-}
-
-func FunctionRegistryPort() string {
-	once.Do(LoadConfig)
-	return cfg.FunctionRegistryPort
-}
-
-func FunctionCacheSize() int {
-	once.Do(LoadConfig)
-	return cfg.FunctionCacheSize
-}
-
-func FunctionCacheBinDir() string {
-	once.Do(LoadConfig)
-	return cfg.FunctionCacheBinDir
-}
-
-func FunctionCacheTtl() time.Duration {
-	once.Do(LoadConfig)
-	return time.Duration(cfg.FunctionCacheTtl)
+	var missing []string
+	if cfg.JWTPemPath == "" {
+		missing = append(missing, "jwt_pem_path")
+	}
+	if cfg.ErmesSecret == "" {
+		missing = append(missing, "ermes_secret")
+	}
+	if cfg.MiddlewareSecret == "" {
+		missing = append(missing, "middleware_secret")
+	}
+	if cfg.DevSecret == "" {
+		missing = append(missing, "dev_secret")
+	}
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("missing required config values: %s", missing)
+	}
+	return &cfg, nil
 }

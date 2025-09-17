@@ -2,7 +2,6 @@ package tokenEncoder
 
 import (
 	"crypto/rsa"
-	"ermes-central-repo/config"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -22,20 +21,23 @@ type TokenEncoder interface {
 
 type TokenEncoderImpl struct {
 	privateKey *rsa.PrivateKey
+	expiration time.Duration
 }
 
-func NewGroupTokenEncoder(keyPath string) (*TokenEncoderImpl, error) {
+func NewGroupTokenEncoder(keyPath string, jwtExpirationTime time.Duration) (*TokenEncoderImpl, error) {
 	tknEncoder := &TokenEncoderImpl{
 		privateKey: nil,
+		expiration: jwtExpirationTime,
 	}
 
 	err := tknEncoder.LoadPrivateKey(keyPath)
 	return tknEncoder, err
 }
 
-func NewGroupTokenEncoderWithKey(key *rsa.PrivateKey) *TokenEncoderImpl {
+func NewGroupTokenEncoderWithKey(key *rsa.PrivateKey, jwtExpirationTime time.Duration) *TokenEncoderImpl {
 	return &TokenEncoderImpl{
 		privateKey: key,
+		expiration: jwtExpirationTime,
 	}
 }
 
@@ -45,7 +47,7 @@ func (t *TokenEncoderImpl) EncodeGroupToken(groups []string, userId string) (str
 			Issuer:    "ermes-central-repository",
 			Subject:   userId,
 			Audience:  nil,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * config.JWTExpirationTime())),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * t.expiration)),
 			NotBefore: nil,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ID:        uuid.NewString(),

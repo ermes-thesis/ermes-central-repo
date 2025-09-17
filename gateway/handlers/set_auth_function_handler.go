@@ -1,28 +1,46 @@
 package handlers
 
 import (
-	"caches"
+	"ermes-central-repo/caches"
+	"ermes-central-repo/logger"
+	"fmt"
 	"net/http"
 )
 
-func SetAuthFunctionHandler(cache caches.FunctionCache, activeAuthFun *string) http.HandlerFunc {
+func SetAuthFunctionHandler(cache caches.FunctionCache, activeAuthFun *string, log *logger.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = r.Body.Close()
+		defer r.Body.Close()
 
 		fnName := r.PathValue("name")
 		fnVersion := r.PathValue("version")
-
 		if fnVersion == "" {
 			fnVersion = "latest"
 		}
 
 		metadata, err := cache.GetMetadata(fnName, fnVersion)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			log.Warn("Failed to retrieve function metadata",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+				"error", err,
+			)
+			log.Debug("Failed to retrieve function metadata",
+				"fn_name", fnName,
+				"fn_version", fnVersion,
+				"headers", r.Header,
+			)
+			http.Error(w, fmt.Sprintf("Function '%s@%s' not found", fnName, fnName), http.StatusNotFound)
 			return
 		}
 
 		*activeAuthFun = metadata.Name + "@" + metadata.Version
+		log.InfofWith("Authentication function set successfully to '%s'",
+			[]any{*activeAuthFun},
+			"remote_addr", r.RemoteAddr,
+			"method", r.Method,
+			"path", r.URL.RequestURI(),
+		)
 
 		w.WriteHeader(http.StatusOK)
 	}

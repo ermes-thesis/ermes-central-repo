@@ -2,29 +2,47 @@ package db
 
 import (
 	"context"
+	"ermes-central-repo/logger"
 	"errors"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 )
 
 type RedisClient struct {
 	client *redis.Client
+	log    *logger.Logger
 }
 
 func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 	ctx := context.Background()
 
-	result, err := r.client.SIsMember(ctx, GROUP_LIST_KEY, groupName).Result()
+	exists, err := r.client.SIsMember(ctx, GROUP_LIST_KEY, groupName).Result()
 	if err != nil {
-		return err
+		r.log.Error("Failed to check if group exists",
+			"group_name", groupName,
+			"user_id", userId,
+			"error", err,
+		)
+		return fmt.Errorf("failed to check if group exists: %v", err)
 	}
-	if !result {
+	if !exists {
+		r.log.Warn("Attempted to add user to non-existing group",
+			"group_name", groupName,
+			"user_id", userId,
+		)
 		return errors.New("group does not exist")
 	}
 
-	_, err = r.client.SAdd(ctx, userId, groupName).Result()
-	if err != nil {
-		return err
+	if _, err := r.client.SAdd(ctx, userId, groupName).Result(); err != nil {
+		r.log.Error("Failed to add user to group",
+			"group_name", groupName,
+			"user_id", userId,
+			"error", err,
+		)
+		return fmt.Errorf("failed to add user to group: %v", err)
 	}
+
+	r.log.Infof("Successfully added '%s' user to '%s' group", userId, groupName)
 	return nil
 }
 
@@ -32,30 +50,62 @@ func (r *RedisClient) RemoveGroupFromUser(groupName string, userId string) error
 	ctx := context.Background()
 	_, err := r.client.SRem(ctx, userId, groupName).Result()
 	if err != nil {
-		return err
+		r.log.Error("Failed to remove user from group",
+			"group_name", groupName,
+			"user_id", userId,
+			"error", err,
+		)
+		return fmt.Errorf("failed to remove user from group: %v", err)
 	}
+
+	r.log.Infof("Successfully removed '%s' user from '%s' group", userId, groupName)
 	return nil
 }
 
 func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 	ctx := context.Background()
-	return r.client.SMembers(ctx, userId).Result()
+	groups, err := r.client.SMembers(ctx, userId).Result()
+	if err != nil {
+		r.log.Error("Failed to retrieve user groups",
+			"user_id", userId,
+			"error", err,
+		)
+		return nil, fmt.Errorf("failed to retrieve user groups: %v", err)
+	}
+
+	r.log.Infof("Retrieved user '%s' groups successfully: %v", userId, groups)
+	return groups, nil
 }
 
 func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) error {
 	ctx := context.Background()
+
 	_, err := r.client.SAdd(ctx, GROUP_LIST_KEY, groupName).Result()
 	if err != nil {
-		return err
+		r.log.Error("Failed to create group",
+			"group_name", groupName,
+			"participant_ids", participantIDs,
+			"error", err,
+		)
+		return fmt.Errorf("failed to create group: %v", err)
 	}
 
 	for _, participantID := range participantIDs {
 		_, err = r.client.SAdd(ctx, participantID, groupName).Result()
 		if err != nil {
-			return err
+			r.log.Error("Failed to add participant to group",
+				"group_name", groupName,
+				"participant_id", participantID,
+				"error", err,
+			)
+			return fmt.Errorf("failed to add participant '%s' to group '%s': %v", participantID, groupName, err)
 		}
 	}
 
+	r.log.Info("Group created successfully",
+		"group_name", groupName,
+		"participant_ids", participantIDs,
+	)
 	return nil
 }
 
@@ -64,17 +114,29 @@ func (r *RedisClient) DeleteGroup(groupName string) error {
 
 	var cursor uint64
 	for {
-		var keys []string
+		var userIDs []string
 		var err error
-		keys, cursor, err = r.client.Scan(ctx, cursor, "*", 10).Result()
+		userIDs, cursor, err = r.client.Scan(ctx, cursor, "*", 10).Result()
 		if err != nil {
-			return err
+			r.log.Error("Failed to scan userIDs during group deletion",
+				"group_name", groupName,
+				"error", err)
+			r.log.Debug("Failed to scan userIDs during group deletion",
+				"cursor", cursor,
+				"userIDs", userIDs,
+			)
+			return fmt.Errorf("failed to scan userIDs for deletion: %v", err)
 		}
 
-		for _, key := range keys {
-			_, err = r.client.SRem(ctx, key, groupName).Result()
+		for _, userID := range userIDs {
+			_, err = r.client.SRem(ctx, userID, groupName).Result()
 			if err != nil {
-				return err
+				r.log.Error("Failed to remove user from group",
+					"group_name", groupName,
+					"user_id", userID,
+					"error", err,
+				)
+				return fmt.Errorf("failed to remove user '%s' from group '%s': %v", userID, groupName, err)
 			}
 		}
 
@@ -83,14 +145,30 @@ func (r *RedisClient) DeleteGroup(groupName string) error {
 		}
 	}
 
+	r.log.Infof("Group '%s' deleted successfully", groupName)
 	return nil
 }
 
 func (r *RedisClient) GetExistingGroups() ([]string, error) {
 	ctx := context.Background()
-	return r.client.SMembers(ctx, GROUP_LIST_KEY).Result()
+	groups, err := r.client.SMembers(ctx, GROUP_LIST_KEY).Result()
+	if err != nil {
+		r.log.Error("Failed to retrieve existing groups",
+			"error", err)
+		return nil, fmt.Errorf("failed to retrieve existing groups: %v", err)
+	}
+
+	r.log.Infof("Retrieved existing groups successfully: %v", groups)
+	return groups, nil
 }
 
 func (r *RedisClient) Close() error {
-	return r.client.Close()
+	err := r.client.Close()
+	if err != nil {
+		r.log.Error("Failed to close redis client", "error", err)
+		return fmt.Errorf("failed to close redis client: %v", err)
+	}
+
+	r.log.Info("Redis client closed successfully")
+	return nil
 }

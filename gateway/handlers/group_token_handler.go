@@ -4,49 +4,104 @@ import (
 	"encoding/json"
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
+	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"net/http"
 	"path/filepath"
 	"strings"
-
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 )
 
-func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log *logger.Logger, cfg *config.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_ = r.Body.Close()
-		userId, httpErr := checkHTTPReqAuth(r, wasmPool, activeAuthFn)
+		defer r.Body.Close()
+
+		userId, httpErr := checkHTTPReqAuth(r, wasmPool, activeAuthFn, cfg)
 		if httpErr != nil {
+			log.WarnfWith("Authorization failed while executing '%s' authentication function",
+				[]any{*activeAuthFn},
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+				"error", httpErr.Error(),
+			)
+			log.Debug("Authorization failed while executing '%s' authentication function",
+				"fn_error_code", httpErr.StatusCode(),
+				"fn_error_message", httpErr.Error(),
+				"headers", r.Header,
+			)
 			http.Error(w, httpErr.Error(), httpErr.StatusCode())
 			return
 		}
+
 		groups, err := rdbClient.GetUserGroups(userId)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error while retrieving access group %s", err), http.StatusInternalServerError)
+			log.Warn("Failed to retrieve user groups",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+				"error", err,
+			)
+			log.Debug("Failed to retrieve user groups",
+				"user_id", userId,
+				"headers", r.Header,
+			)
+			http.Error(w, fmt.Sprintf("Could not retrieve groups for user '%s': %v", userId, err), http.StatusInternalServerError)
 			return
 		}
 
 		groupTokenString, err := tokenEncoder.EncodeGroupToken(groups, userId)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error while encoding access group token %s", err), http.StatusInternalServerError)
+			log.Warn("Failed to encode group token",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+				"error", err,
+			)
+			log.Debug("Failed to encode group token",
+				"user_id", userId,
+				"groups", groups,
+				"headers", r.Header,
+			)
+			http.Error(w, fmt.Sprintf("Failed to generate group token: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
 		response := map[string]string{
 			"group_token": groupTokenString,
 		}
 
-		err = json.NewEncoder(w).Encode(response)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Warn("Failed to write group token response",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+				"error", err,
+			)
+			log.Debug("Failed to write group token response",
+				"user_id", userId,
+				"groups", groups,
+				"group_token_string", groupTokenString,
+				"headers", r.Header,
+			)
+			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 			return
 		}
+
+		log.InfofWith("Group token generated successfully for '%s' user",
+			[]any{userId},
+			"remote_addr", r.RemoteAddr,
+			"method", r.Method,
+			"path", r.URL.RequestURI(),
+			"user_id", userId,
+			"groups", groups,
+		)
 	}
 }
 
-func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool, activeAuthFn *string) (string, *HttpError) {
+func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool, activeAuthFn *string, cfg *config.Config) (string, *HttpError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "ERROR_ID", &NoAuthHeaderErr
@@ -58,7 +113,7 @@ func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool, activeAuthFn
 
 	authToken := strings.TrimPrefix(authHeader, AuthPrefix)
 	executor := wasmPool.Acquire()
-	userId, fnErrCode := executor.InvokeAuthFn(filepath.Join(config.FunctionCacheBinDir(), *activeAuthFn), authToken)
+	userId, fnErrCode := executor.InvokeAuthFn(filepath.Join(cfg.FunctionCacheBinDir, *activeAuthFn), authToken)
 	executor.Release()
 
 	if fnErrCode != 200 {

@@ -2,6 +2,7 @@ package db
 
 import (
 	"ermes-central-repo/config"
+	"ermes-central-repo/logger"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,12 +18,12 @@ type GenericDB interface {
 	Close() error
 }
 
-func NewRedisClient() GenericDB {
+func NewRedisClient(cfg *config.Config, log *logger.Logger) GenericDB {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     config.RedisAddr() + ":" + config.RedisPort(),
-		Password: config.RedisPassword(),
-		DB:       config.RedisDB(),
+		Addr:     cfg.RedisAddr + ":" + cfg.RedisPort,
+		Password: cfg.RedisPassword,
+		DB:       cfg.RedisDB,
 	})
 
-	return &RedisClient{client: rdb}
+	return &RedisClient{client: rdb, log: log}
 }

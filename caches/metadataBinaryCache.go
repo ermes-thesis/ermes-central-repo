@@ -1,7 +1,7 @@
 package caches
 
 import (
-	"caches/metadata"
+	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
 	"os"
 	"path/filepath"
@@ -24,9 +24,9 @@ type MetadataBinaryCache struct {
 // Returns:
 //   - *MetadataBinaryCache: the newly created binary cache
 //   - error: non-nil if the underlying BaseCache could not be created
-func NewMetadataBinaryCache() (*MetadataBinaryCache, error) {
-	binCache, err := NewBaseCacheWithEviction(config.FunctionCacheSize(), config.FunctionCacheTtl(), func(key string, item CacheItem[metadata.FunctionMetadata]) {
-		_ = os.Remove(filepath.Join(config.FunctionCacheBinDir(), item.Value.Name+"@"+item.Value.Version))
+func NewMetadataBinaryCache(cfg *config.Config) (*MetadataBinaryCache, error) {
+	binCache, err := NewBaseCacheWithEviction(cfg.FunctionCacheSize, cfg.FunctionCacheTtl, func(key string, item CacheItem[metadata.FunctionMetadata]) {
+		_ = os.Remove(filepath.Join(cfg.FunctionCacheBinDir, item.Value.Name+"@"+item.Value.Version))
 	})
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func NewMetadataBinaryCache() (*MetadataBinaryCache, error) {
 
 	return &MetadataBinaryCache{
 		cache:  binCache,
-		binDir: config.FunctionCacheBinDir(),
+		binDir: cfg.FunctionCacheBinDir,
 	}, nil
 }
 

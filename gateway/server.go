@@ -1,11 +1,12 @@
 package gateway
 
 import (
-	"caches"
+	"ermes-central-repo/caches"
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
 	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
+	"fmt"
 	"net/http"
 
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
@@ -18,47 +19,79 @@ type Server struct {
 	tokenEncoder tokenEncoder.TokenEncoder
 	cache        caches.FunctionCache
 	activeAuthFn string
-	logger       *logger.Logger
+	log          *logger.Logger
 }
 
 func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(logger *logger.Logger) (*Server, error) {
-	logger.Info("Creating a new Server instance... \n")
+func NewServer(cfg *config.Config, log *logger.Logger, dbLog *logger.Logger, fnCacheLog *logger.Logger) (*Server, error) {
+	log.Info("Creating a new Server instance", "wasm_pool_size", cfg.WASMPoolSize, "jwt_pem_path", cfg.JWTPemPath)
 
-	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(config.JWTPemPath())
+	// Creating token encoder to release encoded group tokens
+	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
 	if err != nil {
-		return nil, err
+		log.Errorf("failed to create token encoder with JWT .pem path: %s", cfg.JWTPemPath)
+		return nil, fmt.Errorf("unable to intializate token encoder: %w", err)
 	}
-	wasmPool := wasm.NewExecutorPool(config.WASMPoolSize())
-	redisClient := db.NewRedisClient()
-	cache, err := caches.NewDefaultFunctionCache()
+	log.Info("Token encoder initialized successfully")
+
+	// Creating a WASM Pool to execute authentication function(s)
+	wasmPool := wasm.NewExecutorPool(cfg.WASMPoolSize)
+	log.Infof("WASM pool created successfully with %d executors", cfg.WASMPoolSize)
+
+	// Creating a RedisClient interface to access underlying DB
+	redisClient := db.NewRedisClient(cfg, dbLog)
+	log.Info("Redis client created successfully", "db_addr", cfg.RedisAddr, "db_port", cfg.RedisPort, "db_index", cfg.RedisDB)
+
+	// Creating new function cache to cache retrieve authentication function(s)
+	cache, err := caches.NewDefaultFunctionCache(cfg, fnCacheLog)
 	if err != nil {
-		return nil, err
+		log.Error("Failed to initialize function cache", "error", err)
+		return nil, fmt.Errorf("unable to initialize function cache: %w", err)
 	}
+	log.Info("Function cache initialized successfully")
 
 	ser := &Server{
 		wasmPool:     wasmPool,
 		redisClient:  redisClient,
-		logger:       logger,
+		log:          log,
 		tokenEncoder: tknEncoder,
 		cache:        cache,
 		router:       http.NewServeMux(),
 	}
-	ser.initRouter()
-	logger.Info("done\n")
+	ser.initRouter(cfg)
+
+	log.Info("Server initialized successfully",
+		"jwt_exp_time", cfg.JWTExpirationTime,
+		"http_server_port", cfg.HTTPPort,
+		"jwt_pem_path", cfg.JWTPemPath,
+		"wasm_pool_size", cfg.WASMPoolSize,
+		"redis_addr", cfg.RedisAddr,
+		"redis_port", cfg.RedisPort,
+		"redis_db", cfg.RedisDB,
+		"fn_cache_size", cfg.FunctionCacheSize,
+		"fn_cache_bin_dir", cfg.FunctionCacheBinDir,
+		"fn_cache_ttl", cfg.FunctionCacheTtl,
+		"function_registry_addr", cfg.FunctionRegistryAddress,
+		"function_registry_port", cfg.FunctionRegistryPort,
+	)
 	return ser, nil
 }
 
 func (s *Server) Close() error {
+	s.log.Info("Closing the server...")
 	err := s.redisClient.Close()
 	if err != nil {
-		return err
+		s.log.Error("Failed to close Redis client", "error", err)
+		return fmt.Errorf("could not close Redis client: %w", err)
 	}
+	s.log.Info("Redis client closed successfully")
 
 	s.wasmPool.Close()
+	s.log.Info("WASM pool closed successfully")
+	s.log.Info("Server closed successfully")
 	return nil
 }
 

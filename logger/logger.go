@@ -101,6 +101,21 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 	_ = l.Handler().Handle(ctx, r)
 }
 
+func (l *Logger) InfofWith(format string, args []any, attrs ...any) {
+	ctx := context.Background()
+	level := slog.LevelInfo
+	if !l.Logger.Enabled(ctx, level) {
+		return
+	}
+
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:])
+
+	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
+	r.Add(attrs...)
+	_ = l.Handler().Handle(ctx, r)
+}
+
 func (l *Logger) Errorf(format string, args ...interface{}) {
 	ctx := context.Background()
 	level := slog.LevelError
@@ -157,21 +172,6 @@ func (l *Logger) Warnf(format string, args ...interface{}) {
 	runtime.Callers(2, pcs[:])
 
 	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.Handler().Handle(ctx, r)
-}
-
-func (l *Logger) InfofWith(format string, args []any, attrs ...any) {
-	ctx := context.Background()
-	level := slog.LevelInfo
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	r.Add(attrs...)
 	_ = l.Handler().Handle(ctx, r)
 }
 
