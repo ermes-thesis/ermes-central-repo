@@ -1,8 +1,10 @@
 package caches
 
 import (
-	"caches/metadata"
+	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
+	"ermes-central-repo/logger"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,20 +14,43 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBinaryCache_SetAndGet(t *testing.T) {
-	t.Setenv("JWT_EXPIRATION_TIME", "3600")
-	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
-	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
-	t.Setenv("ERMES_SECRET", "very secret")
-	t.Setenv("DEV_SECRET", "super secret")
-
-	t.Setenv("FUNCTION_CACHE_SIZE", "20")
-	t.Setenv("FUNCTION_CACHE_TTL", strconv.FormatInt((1*time.Second).Nanoseconds(), 10))
+func getTestLogger(t *testing.T) *logger.Logger {
 	tmpDir := t.TempDir()
-	t.Setenv("FUNCTION_CACHE_BIN_DIR", tmpDir)
-	config.LoadConfig()
+	log, err := logger.NewLogger(logger.Config{
+		Level:  slog.LevelDebug,
+		Format: "text",
+		Output: &logger.LogFile{
+			LogDir:      tmpDir,
+			LogFileName: "test",
+		},
+		StdoutEnabled: false,
+		AddSource:     false,
+	})
+	require.NoError(t, err)
+	return log
+}
 
-	cache, err := NewMetadataBinaryCache()
+func TestBinaryCache_SetAndGet(t *testing.T) {
+	tmpDir := t.TempDir()
+	localizedTmpDir := filepath.ToSlash(tmpDir)
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(
+		"JWT_EXPIRATION_TIME: \"3600s\"\n"+
+			"JWT_PEM_PATH: \"../.devcontainer/private.pem\"\n"+
+			"MIDDLEWARE_SECRET: \"very VERY secret\"\n"+
+			"ERMES_SECRET: \"very secret\"\n"+
+			"DEV_SECRET: \"super secret\"\n"+
+			"FUNCTION_CACHE_SIZE: \"20\"\n"+
+			"FUNCTION_CACHE_TTL: \""+strconv.FormatInt((1*time.Second).Nanoseconds(), 10)+"s\"\n"+
+			"FUNCTION_CACHE_BIN_DIR: \""+localizedTmpDir+"\"\n"), 0644)
+	require.NoError(t, err)
+
+	log := getTestLogger(t)
+	defer log.Close()
+	loadConfig, err := config.LoadConfig(cfgPath, log)
+	require.NoError(t, err)
+
+	cache, err := NewMetadataBinaryCache(loadConfig)
 	require.NoError(t, err)
 
 	data := []byte("test-content-binary")
@@ -57,19 +82,26 @@ func TestBinaryCache_SetAndGet(t *testing.T) {
 }
 
 func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
-	t.Setenv("JWT_EXPIRATION_TIME", "3600")
-	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
-	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
-	t.Setenv("ERMES_SECRET", "very secret")
-	t.Setenv("DEV_SECRET", "super secret")
-
-	t.Setenv("FUNCTION_CACHE_SIZE", "1")
-	t.Setenv("FUNCTION_CACHE_TTL", "0")
 	tmpDir := t.TempDir()
-	t.Setenv("FUNCTION_CACHE_BIN_DIR", tmpDir)
-	config.LoadConfig()
+	localizedTmpDir := filepath.ToSlash(tmpDir)
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(
+		"JWT_EXPIRATION_TIME: \"3600s\"\n"+
+			"JWT_PEM_PATH: \"../.devcontainer/private.pem\"\n"+
+			"MIDDLEWARE_SECRET: \"very VERY secret\"\n"+
+			"ERMES_SECRET: \"very secret\"\n"+
+			"DEV_SECRET: \"super secret\"\n"+
+			"FUNCTION_CACHE_SIZE: \"1\"\n"+
+			"FUNCTION_CACHE_TTL: \"0\"\n"+
+			"FUNCTION_CACHE_BIN_DIR: \""+localizedTmpDir+"\"\n"), 0644)
+	require.NoError(t, err)
 
-	cache, err := NewMetadataBinaryCache()
+	log := getTestLogger(t)
+	defer log.Close()
+	loadConfig, err := config.LoadConfig(cfgPath, log)
+	require.NoError(t, err)
+
+	cache, err := NewMetadataBinaryCache(loadConfig)
 	require.NoError(t, err)
 
 	fn1 := "func1"
@@ -115,19 +147,26 @@ func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
 }
 
 func TestBinaryCache_GetMissing(t *testing.T) {
-	t.Setenv("JWT_EXPIRATION_TIME", "3600")
-	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
-	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
-	t.Setenv("ERMES_SECRET", "very secret")
-	t.Setenv("DEV_SECRET", "super secret")
-
-	t.Setenv("FUNCTION_CACHE_SIZE", "20")
-	t.Setenv("FUNCTION_CACHE_TTL", strconv.FormatInt((1*time.Second).Nanoseconds(), 10))
 	tmpDir := t.TempDir()
-	t.Setenv("FUNCTION_CACHE_BIN_DIR", tmpDir)
-	config.LoadConfig()
+	localizedTmpDir := filepath.ToSlash(tmpDir)
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(
+		"JWT_EXPIRATION_TIME: \"3600s\"\n"+
+			"JWT_PEM_PATH: \"../.devcontainer/private.pem\"\n"+
+			"MIDDLEWARE_SECRET: \"very VERY secret\"\n"+
+			"ERMES_SECRET: \"very secret\"\n"+
+			"DEV_SECRET: \"super secret\"\n"+
+			"FUNCTION_CACHE_SIZE: \"20\"\n"+
+			"FUNCTION_CACHE_TTL: \""+strconv.FormatInt((1*time.Second).Nanoseconds(), 10)+"s\"\n"+
+			"FUNCTION_CACHE_BIN_DIR: \""+localizedTmpDir+"\"\n"), 0644)
+	require.NoError(t, err)
 
-	cache, err := NewMetadataBinaryCache()
+	log := getTestLogger(t)
+	defer log.Close()
+	loadConfig, err := config.LoadConfig(cfgPath, log)
+	require.NoError(t, err)
+
+	cache, err := NewMetadataBinaryCache(loadConfig)
 	require.NoError(t, err)
 
 	// Nothing set yet

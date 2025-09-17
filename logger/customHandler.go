@@ -25,11 +25,11 @@ func (h *customHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &customHandler{baseAttrs: newAttrs, writer: h.writer, opts: h.opts, mu: &sync.Mutex{}}
 }
 
-func (h *customHandler) WithGroup(name string) slog.Handler {
+func (h *customHandler) WithGroup(_ string) slog.Handler {
 	return h
 }
 
-func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h *customHandler) Handle(_ context.Context, r slog.Record) error {
 	var buf strings.Builder
 
 	levelSection := fmt.Sprintf("[%s]", r.Level.String())
@@ -71,6 +71,6 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 	return err
 }
 
-func (h *customHandler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *customHandler) Enabled(_ context.Context, level slog.Level) bool {
 	return level >= h.opts.Level.Level()
 }

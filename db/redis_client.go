@@ -16,7 +16,7 @@ type RedisClient struct {
 func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 	ctx := context.Background()
 
-	exists, err := r.client.SIsMember(ctx, GROUP_LIST_KEY, groupName).Result()
+	exists, err := r.client.SIsMember(ctx, GroupListKey, groupName).Result()
 	if err != nil {
 		r.log.Error("Failed to check if group exists",
 			"group_name", groupName,
@@ -80,7 +80,7 @@ func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) error {
 	ctx := context.Background()
 
-	_, err := r.client.SAdd(ctx, GROUP_LIST_KEY, groupName).Result()
+	_, err := r.client.SAdd(ctx, GroupListKey, groupName).Result()
 	if err != nil {
 		r.log.Error("Failed to create group",
 			"group_name", groupName,
@@ -151,7 +151,7 @@ func (r *RedisClient) DeleteGroup(groupName string) error {
 
 func (r *RedisClient) GetExistingGroups() ([]string, error) {
 	ctx := context.Background()
-	groups, err := r.client.SMembers(ctx, GROUP_LIST_KEY).Result()
+	groups, err := r.client.SMembers(ctx, GroupListKey).Result()
 	if err != nil {
 		r.log.Error("Failed to retrieve existing groups",
 			"error", err)
