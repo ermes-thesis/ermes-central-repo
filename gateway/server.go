@@ -13,6 +13,7 @@ import (
 )
 
 type Server struct {
+	nodeCfg      *config.Config
 	wasmPool     *wasm.ExecutorPool
 	redisClient  db.GenericDB
 	router       *http.ServeMux
@@ -26,58 +27,19 @@ func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(cfg *config.Config, log *logger.Logger, dbLog *logger.Logger, fnCacheLog *logger.Logger) (*Server, error) {
-	log.Info("Creating a new Server instance", "wasm_pool_size", cfg.WASMPoolSize, "jwt_pem_path", cfg.JWTPemPath)
-
-	// Creating token encoder to release encoded group tokens
-	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
-	if err != nil {
-		log.Errorf("failed to create token encoder with JWT .pem path: %s", cfg.JWTPemPath)
-		return nil, fmt.Errorf("unable to intializate token encoder: %w", err)
-	}
-	log.Info("Token encoder initialized successfully")
-
-	// Creating a WASM Pool to execute authentication function(s)
-	wasmPool := wasm.NewExecutorPool(cfg.WASMPoolSize)
-	log.Infof("WASM pool created successfully with %d executors", cfg.WASMPoolSize)
-
-	// Creating a RedisClient interface to access underlying DB
-	redisClient := db.NewRedisClient(cfg, dbLog)
-	log.Info("Redis client created successfully", "db_addr", cfg.RedisAddr, "db_port", cfg.RedisPort, "db_index", cfg.RedisDB)
-
-	// Creating new function cache to cache retrieve authentication function(s)
-	cache, err := caches.NewDefaultFunctionCache(cfg, fnCacheLog)
-	if err != nil {
-		log.Error("Failed to initialize function cache", "error", err)
-		return nil, fmt.Errorf("unable to initialize function cache: %w", err)
-	}
-	log.Info("Function cache initialized successfully")
-
+func NewServer(cfg *config.Config, log *logger.Logger, wasmPool *wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache) *Server {
 	ser := &Server{
+		nodeCfg:      cfg,
 		wasmPool:     wasmPool,
-		redisClient:  redisClient,
+		redisClient:  redis,
 		log:          log,
 		tokenEncoder: tknEncoder,
-		cache:        cache,
+		cache:        fnCache,
 		router:       http.NewServeMux(),
 	}
-	ser.initRouter(cfg)
+	ser.initRouter()
 
-	log.Info("Server initialized successfully",
-		"jwt_exp_time", cfg.JWTExpirationTime,
-		"http_server_port", cfg.HTTPPort,
-		"jwt_pem_path", cfg.JWTPemPath,
-		"wasm_pool_size", cfg.WASMPoolSize,
-		"redis_addr", cfg.RedisAddr,
-		"redis_port", cfg.RedisPort,
-		"redis_db", cfg.RedisDB,
-		"fn_cache_size", cfg.FunctionCacheSize,
-		"fn_cache_bin_dir", cfg.FunctionCacheBinDir,
-		"fn_cache_ttl", cfg.FunctionCacheTtl,
-		"function_registry_addr", cfg.FunctionRegistryAddress,
-		"function_registry_port", cfg.FunctionRegistryPort,
-	)
-	return ser, nil
+	return ser
 }
 
 func (s *Server) Close() error {

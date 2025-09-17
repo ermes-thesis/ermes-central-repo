@@ -1,6 +1,8 @@
 name: ermes-central-repo
 services:
   go:
+    environment:
+      - TZ=Europe/Rome
     # env_file: .env
     build:
       context: .
