@@ -51,8 +51,8 @@ func LoadConfig(log *logger.Logger) (*Config, error) {
 	if cfgPath != "" {
 		v.AddConfigPath(cfgPath)
 	}
-	v.AddConfigPath(filepath.Join(homeDir, ".ermes-fr"))
-	v.AddConfigPath("/etc/ermes-fr/")
+	v.AddConfigPath(filepath.Join(homeDir, ".ermes-cr"))
+	v.AddConfigPath("/etc/ermes-cr/")
 	v.AddConfigPath(".")
 
 	v.SetDefault("jwt_expiration_time", "3600s")
