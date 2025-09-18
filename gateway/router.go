@@ -38,6 +38,9 @@ func filterErmesSecret(log *logger.Logger, ermesSecret string, h http.Handler) h
 				"method", r.Method,
 				"path", r.URL.RequestURI(),
 			)
+			log.DebugfWith("Forbidden request: mismatched X-ERMES-SECRET '%s'",
+				[]any{r.Header.Get("X-ERMES-SECRET")},
+				"true_ermes_secret", ermesSecret)
 			http.Error(w, "Forbidden: invalid Ermes secret", http.StatusForbidden)
 			return
 		}
@@ -53,6 +56,9 @@ func filterMiddlewareSecret(log *logger.Logger, ermesClientLibrarySecret string,
 				"method", r.Method,
 				"path", r.URL.RequestURI(),
 			)
+			log.DebugfWith("Forbidden request: mismatched X-MIDDLEWARE-SECRET '%s'",
+				[]any{r.Header.Get("X-MIDDLEWARE-SECRET")},
+				"true_ermes_secret", ermesClientLibrarySecret)
 			http.Error(w, "Forbidden: invalid Ermes client library secret", http.StatusForbidden)
 			return
 		}
@@ -68,6 +74,9 @@ func filterDevSecret(log *logger.Logger, devSecret string, h http.Handler) http.
 				"method", r.Method,
 				"path", r.URL.RequestURI(),
 			)
+			log.DebugfWith("Forbidden request: mismatched X-DEV-SECRET '%s'",
+				[]any{r.Header.Get("X-DEV-SECRET")},
+				"true_ermes_secret", devSecret)
 			http.Error(w, "Forbidden: invalid Dev secret", http.StatusForbidden)
 			return
 		}

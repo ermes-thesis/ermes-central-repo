@@ -124,6 +124,11 @@ func run(ctx context.Context) error {
 		"function_registry_addr", cfg.FunctionRegistryAddress,
 		"function_registry_port", cfg.FunctionRegistryPort,
 	)
+	generalLogger.Debug("Server initialized successfully",
+		"ermes_secret", cfg.ErmesSecret,
+		"dev_secret", cfg.DevSecret,
+		"middleware_secret", cfg.MiddlewareSecret,
+		"redis_password", cfg.RedisPassword)
 
 	// Creating HTTP Server component
 	httpServer := &http.Server{
