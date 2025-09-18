@@ -3,8 +3,10 @@ package config
 import (
 	"ermes-central-repo/logger"
 	"fmt"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -27,24 +29,31 @@ type Config struct {
 	FunctionCacheTtl        time.Duration `mapstructure:"function_cache_ttl"`
 }
 
-func LoadConfig(cfgPath string, log *logger.Logger) (*Config, error) {
+func LoadConfig(log *logger.Logger) (*Config, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger is nil")
 	}
 
-	if cfgPath == "" {
-		cfgPath = "./config.yml"
-	}
-	log.Infof("Using config file: %s", cfgPath)
-
-	if _, err := os.Stat(cfgPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("config file %s does not exist", cfgPath)
-	}
+	var cfgPath string
+	pflag.StringVarP(&cfgPath, "config", "c", "", "path to config file")
+	pflag.Parse()
 
 	v := viper.New()
 
-	v.SetConfigFile(cfgPath)
+	v.SetConfigName("config")
 	v.SetConfigType("yaml")
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Errorf("Error getting user home directory: %v", err)
+		return nil, fmt.Errorf("error getting user home directory: %v", err)
+	}
+	if cfgPath != "" {
+		v.AddConfigPath(cfgPath)
+	}
+	v.AddConfigPath(filepath.Join(homeDir, ".ermes-fr"))
+	v.AddConfigPath("/etc/ermes-fr/")
+	v.AddConfigPath(".")
 
 	v.SetDefault("jwt_expiration_time", "3600s")
 	v.SetDefault("redis_addr", "redis")
@@ -63,8 +72,15 @@ func LoadConfig(cfgPath string, log *logger.Logger) (*Config, error) {
 	v.SetEnvPrefix("")
 
 	if err := v.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config file: %s", err)
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Warnf("config.yaml file not found in any defined paths. Fallback to ENV variables and default values: %v", err)
+			return nil, fmt.Errorf("config.yaml file not found in any defined paths: %v", err)
+		} else {
+			log.Errorf("Could not load config file: %v", err)
+			return nil, fmt.Errorf("could not load config file: %v", err)
+		}
 	}
+	log.Infof("Using config file: %s", viper.ConfigFileUsed())
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

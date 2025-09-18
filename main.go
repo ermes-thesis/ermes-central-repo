@@ -37,7 +37,7 @@ func run(ctx context.Context) error {
 		Level:  slog.LevelInfo,
 		Format: "text",
 		Output: &logger.LogFile{
-			LogDir: "logs",
+			LogDir: "gtpLogs",
 		},
 		StdoutEnabled: true,
 		AddSource:     true,
@@ -52,7 +52,7 @@ func run(ctx context.Context) error {
 	defer generalLogger.Close()
 
 	// Load configuration
-	cfg, err := config.LoadConfig("config.yaml", generalLogger)
+	cfg, err := config.LoadConfig(generalLogger)
 	if err != nil {
 		return generalLogger.ErrorfErr("error loading configuration: %v", err)
 	}
