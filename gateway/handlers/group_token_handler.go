@@ -6,13 +6,14 @@ import (
 	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 	"net/http"
 	"path/filepath"
 	"strings"
+
+	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
 )
 
-func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log *logger.Logger, fnCacheBinDir string) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log *logger.Logger, fnCacheBinDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
@@ -100,7 +101,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool *wasm.ExecutorPool, tok
 	}
 }
 
-func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool, activeAuthFn *string, fnCacheBinDir string) (string, *HttpError) {
+func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn *string, fnCacheBinDir string) (string, *HttpError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "ERROR_ID", &NoAuthHeaderErr
@@ -112,12 +113,12 @@ func checkHTTPReqAuth(r *http.Request, wasmPool *wasm.ExecutorPool, activeAuthFn
 
 	authToken := strings.TrimPrefix(authHeader, AuthPrefix)
 	executor := wasmPool.Acquire()
-	userId, fnErrCode := executor.InvokeAuthFn(filepath.Join(fnCacheBinDir, *activeAuthFn), authToken)
+	reposnse := executor.Invoke(filepath.Join(fnCacheBinDir, *activeAuthFn), "authEntry", []byte(authToken))
 	executor.Release()
 
-	if fnErrCode != 200 {
+	if reposnse.HttpCode != 200 {
 		return "ERROR_ID", &AuthFailedErr
 	}
 
-	return userId, nil
+	return reposnse.Response.(string), nil
 }
