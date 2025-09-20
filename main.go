@@ -127,7 +127,7 @@ func run(ctx context.Context) error {
 	generalLogger.Debug("Server initialized successfully",
 		"ermes_secret", cfg.ErmesSecret,
 		"dev_secret", cfg.DevSecret,
-		"middleware_secret", cfg.MiddlewareSecret,
+		"client_secret", cfg.ClientSecret,
 		"redis_password", cfg.RedisPassword)
 
 	// Creating HTTP Server component

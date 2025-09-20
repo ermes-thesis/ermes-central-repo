@@ -37,7 +37,7 @@ func TestBinaryCache_SetAndGet(t *testing.T) {
 	err := os.WriteFile(cfgPath, []byte(
 		"JWT_EXPIRATION_TIME: \"3600s\"\n"+
 			"JWT_PEM_PATH: \"../.devcontainer/private.pem\"\n"+
-			"MIDDLEWARE_SECRET: \"very VERY secret\"\n"+
+			"CLIENT_SECRET: \"very VERY secret\"\n"+
 			"ERMES_SECRET: \"very secret\"\n"+
 			"DEV_SECRET: \"super secret\"\n"+
 			"FUNCTION_CACHE_SIZE: \"20\"\n"+
@@ -47,7 +47,7 @@ func TestBinaryCache_SetAndGet(t *testing.T) {
 
 	log := getTestLogger(t)
 	defer log.Close()
-	loadConfig, err := config.LoadConfig(cfgPath, log)
+	loadConfig, err := config.LoadConfig(log)
 	require.NoError(t, err)
 
 	cache, err := NewMetadataBinaryCache(loadConfig)
@@ -88,7 +88,7 @@ func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
 	err := os.WriteFile(cfgPath, []byte(
 		"JWT_EXPIRATION_TIME: \"3600s\"\n"+
 			"JWT_PEM_PATH: \"../.devcontainer/private.pem\"\n"+
-			"MIDDLEWARE_SECRET: \"very VERY secret\"\n"+
+			"CLIENT_SECRET: \"very VERY secret\"\n"+
 			"ERMES_SECRET: \"very secret\"\n"+
 			"DEV_SECRET: \"super secret\"\n"+
 			"FUNCTION_CACHE_SIZE: \"1\"\n"+
@@ -98,7 +98,7 @@ func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
 
 	log := getTestLogger(t)
 	defer log.Close()
-	loadConfig, err := config.LoadConfig(cfgPath, log)
+	loadConfig, err := config.LoadConfig(log)
 	require.NoError(t, err)
 
 	cache, err := NewMetadataBinaryCache(loadConfig)
@@ -153,7 +153,7 @@ func TestBinaryCache_GetMissing(t *testing.T) {
 	err := os.WriteFile(cfgPath, []byte(
 		"JWT_EXPIRATION_TIME: \"3600s\"\n"+
 			"JWT_PEM_PATH: \"../.devcontainer/private.pem\"\n"+
-			"MIDDLEWARE_SECRET: \"very VERY secret\"\n"+
+			"CLIENT_SECRET: \"very VERY secret\"\n"+
 			"ERMES_SECRET: \"very secret\"\n"+
 			"DEV_SECRET: \"super secret\"\n"+
 			"FUNCTION_CACHE_SIZE: \"20\"\n"+
@@ -163,7 +163,7 @@ func TestBinaryCache_GetMissing(t *testing.T) {
 
 	log := getTestLogger(t)
 	defer log.Close()
-	loadConfig, err := config.LoadConfig(cfgPath, log)
+	loadConfig, err := config.LoadConfig(log)
 	require.NoError(t, err)
 
 	cache, err := NewMetadataBinaryCache(loadConfig)

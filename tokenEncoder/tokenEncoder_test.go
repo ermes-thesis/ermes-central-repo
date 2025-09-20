@@ -13,7 +13,7 @@ func TestEncodeGroupToken_Success(t *testing.T) {
 	jwtExpirationTime := 24 * time.Hour
 	t.Setenv("JWT_EXPIRATION_TIME", "3600")
 	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
-	t.Setenv("MIDDLEWARE_SECRET", "very VERY secret")
+	t.Setenv("CLIENT_SECRET", "very VERY secret")
 	t.Setenv("ERMES_SECRET", "vey secret")
 
 	tknEncoder, err := NewGroupTokenEncoder(jwtPemPath, jwtExpirationTime)

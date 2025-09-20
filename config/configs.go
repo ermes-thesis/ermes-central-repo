@@ -20,7 +20,7 @@ type Config struct {
 	HTTPPort                string        `mapstructure:"http_port"`
 	WASMPoolSize            int           `mapstructure:"wasm_pool_size"`
 	ErmesSecret             string        `mapstructure:"ermes_secret"`
-	MiddlewareSecret        string        `mapstructure:"middleware_secret"`
+	ClientSecret            string        `mapstructure:"client_secret"`
 	DevSecret               string        `mapstructure:"dev_secret"`
 	FunctionRegistryAddress string        `mapstructure:"function_registry_address"`
 	FunctionRegistryPort    string        `mapstructure:"function_registry_port"`
@@ -94,8 +94,8 @@ func LoadConfig(log *logger.Logger) (*Config, error) {
 	if cfg.ErmesSecret == "" {
 		missing = append(missing, "ermes_secret")
 	}
-	if cfg.MiddlewareSecret == "" {
-		missing = append(missing, "middleware_secret")
+	if cfg.ClientSecret == "" {
+		missing = append(missing, "client_secret")
 	}
 	if cfg.DevSecret == "" {
 		missing = append(missing, "dev_secret")
