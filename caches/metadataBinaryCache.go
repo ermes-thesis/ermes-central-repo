@@ -25,6 +25,11 @@ type MetadataBinaryCache struct {
 //   - *MetadataBinaryCache: the newly created binary cache
 //   - error: non-nil if the underlying BaseCache could not be created
 func NewMetadataBinaryCache(cfg *config.Config) (*MetadataBinaryCache, error) {
+	err := os.MkdirAll(cfg.FunctionCacheBinDir, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
 	binCache, err := NewBaseCacheWithEviction(cfg.FunctionCacheSize, cfg.FunctionCacheTtl, func(key string, item CacheItem[metadata.FunctionMetadata]) {
 		_ = os.Remove(filepath.Join(cfg.FunctionCacheBinDir, item.Value.Name+"@"+item.Value.Version))
 	})
