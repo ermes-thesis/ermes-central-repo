@@ -14,7 +14,7 @@ import (
 
 type Server struct {
 	nodeCfg      *config.Config
-	wasmPool     *wasm.ExecutorPool
+	wasmPool     wasm.ExecutorPool
 	redisClient  db.GenericDB
 	router       *http.ServeMux
 	tokenEncoder tokenEncoder.TokenEncoder
@@ -27,7 +27,7 @@ func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(cfg *config.Config, log *logger.Logger, wasmPool *wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache) *Server {
+func NewServer(cfg *config.Config, log *logger.Logger, wasmPool wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache) *Server {
 	ser := &Server{
 		nodeCfg:      cfg,
 		wasmPool:     wasmPool,
