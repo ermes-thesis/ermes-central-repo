@@ -4,7 +4,7 @@ import (
 	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
 	"ermes-central-repo/logger"
-	"log/slog"
+	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,7 +17,7 @@ import (
 func getTestLogger(t *testing.T) *logger.Logger {
 	tmpDir := t.TempDir()
 	log, err := logger.NewLogger(logger.Config{
-		Level:  slog.LevelDebug,
+		Level:  zerolog.DebugLevel,
 		Format: "text",
 		Output: &logger.LogFile{
 			LogDir:      tmpDir,
@@ -41,13 +41,13 @@ func TestBinaryCache_SetAndGet(t *testing.T) {
 			"ERMES_SECRET: \"very secret\"\n"+
 			"DEV_SECRET: \"super secret\"\n"+
 			"FUNCTION_CACHE_SIZE: \"20\"\n"+
-			"FUNCTION_CACHE_TTL: \""+strconv.FormatInt((1*time.Second).Nanoseconds(), 10)+"s\"\n"+
+			"FUNCTION_CACHE_TTL: \"1s\"\n"+
 			"FUNCTION_CACHE_BIN_DIR: \""+localizedTmpDir+"\"\n"), 0644)
 	require.NoError(t, err)
 
 	log := getTestLogger(t)
 	defer log.Close()
-	loadConfig, err := config.LoadConfig(log)
+	loadConfig, err := config.LoadConfig(log, localizedTmpDir)
 	require.NoError(t, err)
 
 	cache, err := NewMetadataBinaryCache(loadConfig)
@@ -98,7 +98,7 @@ func TestBinaryCache_EvictionRemovesFile(t *testing.T) {
 
 	log := getTestLogger(t)
 	defer log.Close()
-	loadConfig, err := config.LoadConfig(log)
+	loadConfig, err := config.LoadConfig(log, localizedTmpDir)
 	require.NoError(t, err)
 
 	cache, err := NewMetadataBinaryCache(loadConfig)
@@ -163,7 +163,7 @@ func TestBinaryCache_GetMissing(t *testing.T) {
 
 	log := getTestLogger(t)
 	defer log.Close()
-	loadConfig, err := config.LoadConfig(log)
+	loadConfig, err := config.LoadConfig(log, localizedTmpDir)
 	require.NoError(t, err)
 
 	cache, err := NewMetadataBinaryCache(loadConfig)

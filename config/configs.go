@@ -3,7 +3,6 @@ package config
 import (
 	"ermes-central-repo/logger"
 	"fmt"
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
@@ -29,14 +28,10 @@ type Config struct {
 	FunctionCacheTtl        time.Duration `mapstructure:"function_cache_ttl"`
 }
 
-func LoadConfig(log *logger.Logger) (*Config, error) {
+func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger is nil")
 	}
-
-	var cfgPath string
-	pflag.StringVarP(&cfgPath, "config", "c", "", "path to config file")
-	pflag.Parse()
 
 	v := viper.New()
 
@@ -80,7 +75,7 @@ func LoadConfig(log *logger.Logger) (*Config, error) {
 			return nil, fmt.Errorf("could not load config file: %v", err)
 		}
 	}
-	log.Infof("Using config file: %s", viper.ConfigFileUsed())
+	log.Infof("Using config file: %s", v.ConfigFileUsed())
 
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {

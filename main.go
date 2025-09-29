@@ -11,7 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
-	"log/slog"
+	"github.com/rs/zerolog"
+	"github.com/spf13/pflag"
 	"net"
 	"net/http"
 	"os"
@@ -29,12 +30,16 @@ func main() {
 }
 
 func run(ctx context.Context) error {
+	var cfgPath string
+	pflag.StringVarP(&cfgPath, "config", "c", "", "path to config file")
+	pflag.Parse()
+
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
 	// Create logger factory
 	loggerFactory := logger.NewFactory(logger.Config{
-		Level:  slog.LevelInfo,
+		Level:  zerolog.InfoLevel,
 		Format: "text",
 		Output: &logger.LogFile{
 			LogDir: "gtpLogs",
@@ -52,7 +57,7 @@ func run(ctx context.Context) error {
 	defer generalLogger.Close()
 
 	// Load configuration
-	cfg, err := config.LoadConfig(generalLogger)
+	cfg, err := config.LoadConfig(generalLogger, cfgPath)
 	if err != nil {
 		return generalLogger.ErrorfErr("error loading configuration: %v", err)
 	}
