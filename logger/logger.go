@@ -1,29 +1,27 @@
 package logger
 
 import (
-	"context"
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog"
 	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
-	"runtime"
-	"sync"
-	"time"
+	"strings"
 )
 
 type Logger struct {
-	*slog.Logger
+	Logger  zerolog.Logger
 	logFile *os.File
 }
 
 type Config struct {
-	Level         slog.Level
-	Format        string
+	Level         zerolog.Level
+	Format        string // "text" or "json"
 	Output        *LogFile
 	StdoutEnabled bool
 	AddSource     bool
+	Colored       bool
 }
 
 type LogFile struct {
@@ -31,13 +29,16 @@ type LogFile struct {
 	LogFileName string
 }
 
+const levelSectionWidth = 7
+
 func NewLogger(config Config) (*Logger, error) {
 	var (
-		writer  io.Writer = os.Stdout
+		outputs []io.Writer
 		logFile *os.File
 		err     error
 	)
 
+	// Checking if an output .log file has been configured
 	if config.Output != nil {
 		logPath := filepath.Join(config.Output.LogDir, config.Output.LogFileName)
 		err = os.MkdirAll(filepath.Dir(logPath), 0755)
@@ -49,35 +50,67 @@ func NewLogger(config Config) (*Logger, error) {
 			return nil, err
 		}
 
-		if config.StdoutEnabled {
-			writer = io.MultiWriter(logFile, os.Stdout)
-		} else {
-			writer = logFile
-		}
+		// If everything went well, add the file to the outputs to which the logger must write
+		outputs = append(outputs, buildWriter(config.Format, logFile, true))
 	}
 
-	handlerOpts := slog.HandlerOptions{
-		AddSource: config.AddSource,
-		Level:     config.Level,
+	// If an output file has not been configured, fallback to stdout
+	// If an output file has been configured, add stdout only if explicitly requested
+	if len(outputs) == 0 || config.StdoutEnabled {
+		outputs = append(outputs, buildConsoleWriter(os.Stdout, !config.Colored))
 	}
 
-	var handler slog.Handler
-	switch config.Format {
-	case "json":
-		handler = slog.NewJSONHandler(writer, &handlerOpts)
-	default:
-		handler = &customHandler{
-			writer: writer,
-			opts:   handlerOpts,
-			mu:     &sync.Mutex{},
-		}
+	// Notify to zerolog to use multiple writers
+	writer := zerolog.MultiLevelWriter(outputs...)
+
+	// Initializing the base structure of the logger with a timestamp
+	base := zerolog.New(writer).With().Timestamp()
+
+	// If requested add the Caller file:line
+	if config.AddSource {
+		base = base.CallerWithSkipFrameCount(3)
 	}
 
+	// Create the logger
+	logger := base.Logger().Level(config.Level)
 	return &Logger{
-		Logger:  slog.New(handler),
+		Logger:  logger,
 		logFile: logFile,
 	}, nil
 
+}
+
+// buildConsoleWriter wraps the parameter writer into a zerolog.ConsoleWriter to
+// create some pretty logging. This is the default writer that is used to write to
+// os.Stdout
+func buildConsoleWriter(out io.Writer, noColor bool) io.Writer {
+	return zerolog.ConsoleWriter{
+		Out:        out,
+		NoColor:    noColor,
+		TimeFormat: "2006-01-02 15:04:05",
+		PartsOrder: []string{zerolog.LevelFieldName, zerolog.TimestampFieldName, zerolog.CallerFieldName, zerolog.MessageFieldName},
+		FormatLevel: func(level any) string {
+			levelSection := fmt.Sprintf("[%s]", level)
+			pad := levelSectionWidth - len(levelSection)
+			levelSection = levelSection + strings.Repeat(" ", pad)
+			return strings.ToUpper(levelSection)
+		},
+	}
+}
+
+// buildWriter is used to build a writer according to the specified format.
+//
+// If the "json" format is chosen, the parameter writer is returned as it is, and zerolog
+// will take care of its formatting (JSON, is the default formatting for zerolog logging)
+//
+// If the "text" format is chosen, the parameter writer is wrapper in a zerolog.ConsoleWriter
+// that will take care of formatting the logging messages in a pretty and easily understandable way
+func buildWriter(format string, out io.Writer, noColor bool) io.Writer {
+	if format == "json" {
+		return out
+	}
+
+	return buildConsoleWriter(out, noColor)
 }
 
 func (l *Logger) Close() error {
@@ -87,163 +120,75 @@ func (l *Logger) Close() error {
 	return nil
 }
 
+func (l *Logger) Info(msg string, attrs ...any) {
+	l.Logger.Info().Fields(attrs).Msg(msg)
+}
+
 func (l *Logger) Infof(format string, args ...interface{}) {
-	ctx := context.Background()
-	level := slog.LevelInfo
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Info().Msg(fmt.Sprintf(format, args...))
 }
 
 func (l *Logger) InfofWith(format string, args []any, attrs ...any) {
-	ctx := context.Background()
-	level := slog.LevelInfo
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
+	l.Logger.Info().Fields(attrs).Msgf(format, args...)
+}
 
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	r.Add(attrs...)
-	_ = l.Handler().Handle(ctx, r)
+func (l *Logger) Error(msg string, attrs ...any) {
+	l.Logger.Error().Fields(attrs).Msg(msg)
 }
 
 func (l *Logger) Errorf(format string, args ...interface{}) {
-	ctx := context.Background()
-	level := slog.LevelError
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Error().Msgf(format, args...)
 }
 
 func (l *Logger) ErrorfErr(format string, args ...interface{}) error {
 	errStr := fmt.Sprintf(format, args...)
-	ctx := context.Background()
-	level := slog.LevelError
-	if !l.Logger.Enabled(ctx, level) {
-		return errors.New(errStr)
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, errStr, pcs[0])
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Error().Msg(errStr)
 
 	return errors.New(errStr)
 }
 
+func (l *Logger) Debug(msg string, attrs ...any) {
+	l.Logger.Debug().Fields(attrs).Msg(msg)
+}
+
 func (l *Logger) Debugf(format string, args ...interface{}) {
-	ctx := context.Background()
-	level := slog.LevelDebug
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Debug().Msgf(format, args...)
 }
 
 func (l *Logger) Warnf(format string, args ...interface{}) {
-	ctx := context.Background()
-	level := slog.LevelWarn
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Warn().Msgf(format, args...)
 }
 
 func (l *Logger) DebugfWith(format string, args []any, attrs ...any) {
-	ctx := context.Background()
-	level := slog.LevelDebug
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
+	l.Logger.Debug().Fields(attrs).Msgf(format, args...)
+}
 
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	r.Add(attrs...)
-	_ = l.Handler().Handle(ctx, r)
+func (l *Logger) Warn(msg string, attrs ...any) {
+	l.Logger.Warn().Fields(attrs).Msg(msg)
 }
 
 func (l *Logger) WarnfWith(format string, args []any, attrs ...any) {
-	ctx := context.Background()
-	level := slog.LevelWarn
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, fmt.Sprintf(format, args...), pcs[0])
-	r.Add(attrs...)
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Warn().Fields(attrs).Msgf(format, args...)
 }
 
 func (l *Logger) ErrorfWith(format string, args []any, attrs ...any) {
-	errStr := fmt.Sprintf(format, args...)
-
-	ctx := context.Background()
-	level := slog.LevelInfo
-	if !l.Logger.Enabled(ctx, level) {
-		return
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, errStr, pcs[0])
-	r.Add(attrs...)
-	_ = l.Handler().Handle(ctx, r)
+	l.Logger.Error().Fields(attrs).Msgf(format, args...)
 }
 
 func (l *Logger) ErrorfErrWith(format string, args []any, attrs ...any) error {
 	errStr := fmt.Sprintf(format, args...)
 
-	ctx := context.Background()
-	level := slog.LevelInfo
-	if !l.Logger.Enabled(ctx, level) {
-		return errors.New(errStr)
-	}
-
-	var pcs [1]uintptr
-	runtime.Callers(2, pcs[:])
-
-	r := slog.NewRecord(time.Now(), level, errStr, pcs[0])
-	r.Add(attrs...)
-	_ = l.Handler().Handle(ctx, r)
-
+	l.Logger.Error().Fields(attrs).Msg(errStr)
 	return errors.New(errStr)
+}
+
+func (l *Logger) Enabled(level zerolog.Level) bool {
+	return level >= l.Logger.GetLevel()
 }
 
 func (l *Logger) With(args ...any) *Logger {
 	return &Logger{
-		Logger:  l.Logger.With(args...),
+		Logger:  l.Logger.With().Fields(args).Logger(),
 		logFile: l.logFile,
 	}
 }
