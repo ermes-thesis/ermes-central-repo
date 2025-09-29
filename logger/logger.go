@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/diode"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Logger struct {
@@ -84,7 +86,7 @@ func NewLogger(config Config) (*Logger, error) {
 // create some pretty logging. This is the default writer that is used to write to
 // os.Stdout
 func buildConsoleWriter(out io.Writer, noColor bool) io.Writer {
-	return zerolog.ConsoleWriter{
+	return diode.NewWriter(zerolog.ConsoleWriter{
 		Out:        out,
 		NoColor:    noColor,
 		TimeFormat: "2006-01-02 15:04:05",
@@ -95,7 +97,9 @@ func buildConsoleWriter(out io.Writer, noColor bool) io.Writer {
 			levelSection = levelSection + strings.Repeat(" ", pad)
 			return strings.ToUpper(levelSection)
 		},
-	}
+	}, 1000, 10*time.Millisecond, func(missed int) {
+		fmt.Printf("Logger dropped %d messages", missed)
+	})
 }
 
 // buildWriter is used to build a writer according to the specified format.
@@ -107,7 +111,9 @@ func buildConsoleWriter(out io.Writer, noColor bool) io.Writer {
 // that will take care of formatting the logging messages in a pretty and easily understandable way
 func buildWriter(format string, out io.Writer, noColor bool) io.Writer {
 	if format == "json" {
-		return out
+		return diode.NewWriter(out, 1000, 10*time.Millisecond, func(missed int) {
+			fmt.Printf("Logger dropped %d messages", missed)
+		})
 	}
 
 	return buildConsoleWriter(out, noColor)
