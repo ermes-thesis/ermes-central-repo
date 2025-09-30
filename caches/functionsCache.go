@@ -16,7 +16,7 @@ type FunctionCache interface {
 
 type FunctionCacheImpl struct {
 	MetadataBinaries *MetadataBinaryCache
-	LatestVersions   *BaseCache[string]
+	LatestVersions   GenericCache[string]
 	fetcher          Fetcher[*FunctionBundle]
 	group            singleflight.Group
 	log              *logger.Logger
