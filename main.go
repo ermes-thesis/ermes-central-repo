@@ -6,19 +6,20 @@ import (
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
 	"ermes-central-repo/gateway"
-	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
 	"errors"
 	"fmt"
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
-	"github.com/rs/zerolog"
-	"github.com/spf13/pflag"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"time"
+
+	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/ermes-thesis/ermes-common/wasm-pool"
+	"github.com/rs/zerolog"
+	"github.com/spf13/pflag"
 )
 
 func main() {
@@ -38,6 +39,7 @@ func run(ctx context.Context) error {
 	defer cancel()
 
 	// Create logger factory
+
 	loggerFactory := logger.NewFactory(logger.Config{
 		Level:  zerolog.InfoLevel,
 		Format: "text",
@@ -47,7 +49,6 @@ func run(ctx context.Context) error {
 		StdoutEnabled: true,
 		AddSource:     true,
 	})
-
 	// Create general logger
 	generalLogger, err := loggerFactory.New("general")
 	if err != nil {
@@ -90,7 +91,7 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Token encoder initialized successfully")
 
 	// Creating a WASM Pool to execute authentication function(s)
-	wasmPool := wasm.NewExecutorPool(cfg.WASMPoolSize)
+	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize)
 	generalLogger.Infof("WASM pool created successfully with %d executors", cfg.WASMPoolSize)
 
 	// Creating a RedisClient interface to access underlying DB

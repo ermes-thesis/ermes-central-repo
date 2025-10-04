@@ -4,12 +4,12 @@ import (
 	"ermes-central-repo/caches"
 	"ermes-central-repo/config"
 	"ermes-central-repo/db"
-	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
 	"net/http"
 
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
+	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/ermes-thesis/ermes-common/wasm-pool"
 )
 
 type Server struct {

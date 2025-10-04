@@ -3,10 +3,11 @@ package caches
 import (
 	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
-	"ermes-central-repo/logger"
 	"fmt"
-	"golang.org/x/sync/singleflight"
 	"slices"
+
+	"github.com/ermes-thesis/ermes-common/logger"
+	"golang.org/x/sync/singleflight"
 )
 
 // FunctionCache defins an interface for retrieving function binaries and metadata,

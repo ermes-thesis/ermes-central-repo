@@ -2,7 +2,8 @@ package db
 
 import (
 	"ermes-central-repo/config"
-	"ermes-central-repo/logger"
+
+	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/redis/go-redis/v9"
 )
 

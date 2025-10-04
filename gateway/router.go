@@ -2,9 +2,10 @@ package gateway
 
 import (
 	"ermes-central-repo/gateway/handlers"
-	"ermes-central-repo/logger"
 	"io"
 	"net/http"
+
+	"github.com/ermes-thesis/ermes-common/logger"
 )
 
 func (s *Server) initRouter() {

@@ -3,13 +3,14 @@ package caches
 import (
 	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
-	"ermes-central-repo/logger"
-	"github.com/rs/zerolog"
 	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/require"
 )

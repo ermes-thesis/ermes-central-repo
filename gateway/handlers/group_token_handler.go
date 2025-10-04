@@ -3,14 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"ermes-central-repo/db"
-	"ermes-central-repo/logger"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
 
-	"github.com/ermes-thesis/ermes-wasm-pool/wasm-pool"
+	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/ermes-thesis/ermes-common/wasm-pool"
 )
 
 func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log *logger.Logger, fnCacheBinDir string) http.HandlerFunc {

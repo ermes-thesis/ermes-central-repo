@@ -1,12 +1,13 @@
 package config
 
 import (
-	"ermes-central-repo/logger"
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/spf13/viper"
 )
 
 type Config struct {

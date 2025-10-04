@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"ermes-central-repo/db"
-	"ermes-central-repo/logger"
 	"fmt"
 	"net/http"
+
+	"github.com/ermes-thesis/ermes-common/logger"
 )
 
 func AddToGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.HandlerFunc {

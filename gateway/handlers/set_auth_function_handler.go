@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"ermes-central-repo/caches"
-	"ermes-central-repo/logger"
 	"fmt"
 	"net/http"
+
+	"github.com/ermes-thesis/ermes-common/logger"
 )
 
 func SetAuthFunctionHandler(cache caches.FunctionCache, activeAuthFun *string, log *logger.Logger) http.HandlerFunc {
