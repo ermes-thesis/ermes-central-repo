@@ -18,7 +18,7 @@ jobs:
         with:
           path: 'ermes-central-repo'
 
-      - name: Checkout wasm pool
+      - name: Checkout ermes-common
         uses: actions/checkout@v4
         with:
           repository: 'ermes-thesis/ermes-common'
@@ -38,7 +38,7 @@ jobs:
       - name: Run tests
         run: |
           cd ermes-central-repo
-          go test -json ./... | go-ctrf-json-reporter -output ctrf-report.json
+          go test -json ./... | go-ctrf-json-reporter -output ctrf-report.json -v
 
       - name: Publish Test Report
         uses: ctrf-io/github-test-reporter@v1
