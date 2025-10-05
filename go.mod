@@ -20,10 +20,14 @@ replace github.com/ermes-thesis/ermes-common/wasm-pool => ../ermes-common/wasm-p
 
 replace github.com/ermes-thesis/ermes-common/logger => ../ermes-common/logger
 
+replace github.com/ermes-thesis/ermes-common/model => ../ermes-common/model
+
 require (
+	github.com/bytecodealliance/wasmtime-go/v37 v37.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/ermes-thesis/ermes-common/model v0.0.0-00010101000000-000000000000 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
