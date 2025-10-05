@@ -1,0 +1,52 @@
+name: Test
+on: [ push, pull_request, workflow_dispatch ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      issues: read
+      checks: write
+      pull-requests: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: 'ermes-central-repo'
+
+      - name: Checkout wasm pool
+        uses: actions/checkout@v4
+        with:
+          repository: 'ermes-thesis/ermes-common'
+          token: '${{ secrets.READ_TOKEN }}'
+          path: 'ermes-common'
+
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: ermes-central-repo/go.sum
+
+      - name: Install Go CTRF Reporter
+        run: go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
+
+      - name: Run tests
+        run: |
+          cd ermes-central-repo
+          go test -json ./... | go-ctrf-json-reporter -output ctrf-report.json
+
+      - name: Publish Test Report
+        uses: ctrf-io/github-test-reporter@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          report-path: 'ermes-central-repo/ctrf-report.json'
+          pull-request: true
+#          status-check: true
+#          status-check-name: 'Test Reporter Results'
+        if: always()
