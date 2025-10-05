@@ -25,6 +25,11 @@ jobs:
           token: '${{ secrets.READ_TOKEN }}'
           path: 'ermes-common'
 
+      - name: Install WasmEdge
+        run: curl -sSf https://raw.githubusercontent.com/WasmEdge/WasmEdge/master/utils/install.sh | sudo bash -s -- -p /usr/local
+
+      - name: Verify WasmEdge installation
+        run: wasmedge --version
 
       - name: Setup Go
         uses: actions/setup-go@v5
