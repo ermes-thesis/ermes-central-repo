@@ -47,7 +47,7 @@ func (t *TokenEncoderImpl) EncodeGroupToken(groups []string, userId string) (str
 			Issuer:    "ermes-central-repository",
 			Subject:   userId,
 			Audience:  nil,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * t.expiration)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(t.expiration)),
 			NotBefore: nil,
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ID:        uuid.NewString(),
