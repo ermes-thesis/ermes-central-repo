@@ -9,11 +9,40 @@ import (
 	"slices"
 )
 
+// FunctionCache defins an interface for retrieving function binaries and metadata,
+// with transparent local caching and optional remote fetching.
 type FunctionCache interface {
+	// GetBinary retrieves the compiled binary for the specified function and version.
+	//
+	// Parameters:
+	//	 - functionName: the logical name of the function.
+	//	 - functionVersion: the version to retrieve ("latest" is supported).
+	//
+	// Returns:
+	//	 - []byte: the function's compiled binary data.
+	//	 - error: non-nil if the binary could not be retrieved or fetched.
 	GetBinary(functionName string, functionVersion string) ([]byte, error)
+
+	// GetMetadata retrieves the metadata for the specified function and version.
+	//
+	// Parameters:
+	//	 - functionName: the logical name of the function.
+	//	 - functionVersion: the version to retrieve ("latest" is supported).
+	//
+	// Returns:
+	//	 - *metadata.FunctionMetadata: the retrieved metadata object of the function.
+	//	 - error: non-nil if the metadata could not be retrieved or fetched.
 	GetMetadata(functionName string, functionVersion string) (*metadata.FunctionMetadata, error)
 }
 
+// FunctionCacheImpl is a concrete implementation of FunctionCache that uses
+// multiple internal caches to store function binaries and metadata.
+//
+// It coordinates local caching with remote fetching via a Fetcher implementation,
+// uses singleflight to avoid redundant requests, and maintains a "latest version"
+// cache for quick resolution. Since the underlying MetadataBinaryCache and BaseCache
+// are safe for concurrent use, also FunctionCacheImpl is safe for concurrent uses
+// by multiple goroutines
 type FunctionCacheImpl struct {
 	MetadataBinaries *MetadataBinaryCache
 	LatestVersions   GenericCache[string]
@@ -22,6 +51,10 @@ type FunctionCacheImpl struct {
 	log              *logger.Logger
 }
 
+// NewFunctionCache creates a FunctionCacheImpl using the provided fetcher.
+//
+// It initializes metadata/binary caches and a latest-version tracker based on
+// the configuration parameters
 func NewFunctionCache(cfg *config.Config, fetcher Fetcher[*FunctionBundle], log *logger.Logger) (*FunctionCacheImpl, error) {
 	binCache, err := NewMetadataBinaryCache(cfg)
 	if err != nil {
@@ -40,6 +73,8 @@ func NewFunctionCache(cfg *config.Config, fetcher Fetcher[*FunctionBundle], log 
 	}, nil
 }
 
+// NewDefaultFunctionCache creates a FunctionCacheImpl with a default remote Fetcher
+// that will communicate with the Ermes Function Registry node
 func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionCacheImpl, error) {
 	binCache, err := NewMetadataBinaryCache(cfg)
 	if err != nil {
@@ -59,6 +94,8 @@ func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionC
 	}, nil
 }
 
+// GetBinary returns the function binary from cache or fetches it from the remote
+// registry if not present or outdated. "latest" versions are resolved automatically.
 func (f *FunctionCacheImpl) GetBinary(functionName string, functionVersion string) ([]byte, error) {
 	if functionVersion == "latest" {
 		bundle, err := f.resolveLatest(functionName, "binary")
@@ -110,6 +147,8 @@ func (f *FunctionCacheImpl) GetBinary(functionName string, functionVersion strin
 	return fnBundle.Binary, err
 }
 
+// GetMetadata returns the function metadata from cache or fetches it from the
+// remote registry if not present or outdated. Handles "latest" resolution.
 func (f *FunctionCacheImpl) GetMetadata(functionName string, functionVersion string) (*metadata.FunctionMetadata, error) {
 	if functionVersion == "latest" {
 		bundle, err := f.resolveLatest(functionName, "metadata")
@@ -153,6 +192,8 @@ func (f *FunctionCacheImpl) GetMetadata(functionName string, functionVersion str
 	return &fnBundle.Metadata, nil
 }
 
+// getSnapshot attempts to build a FunctionBundle directly from cached data,
+// returning nil if the requested version is not found.
 func (f *FunctionCacheImpl) getSnapshot(functionName string, functionVersion string, want string) (*FunctionBundle, error) {
 	switch want {
 	case "metadata":
@@ -171,6 +212,10 @@ func (f *FunctionCacheImpl) getSnapshot(functionName string, functionVersion str
 	return nil, nil
 }
 
+// resolveLatest resolves the "latest" version of a function, updating caches as needed.
+//
+// It uses the LatestVersions cache to determine if a refresh is required,
+// and may fetch from the remote registry if data is missing or expired.
 func (f *FunctionCacheImpl) resolveLatest(functionName, want string) (*FunctionBundle, error) {
 	cachedVersion, found, expired := f.LatestVersions.GetWithStatus(functionName)
 	bundle, err := f.getSnapshot(functionName, cachedVersion, want)
@@ -211,6 +256,7 @@ func (f *FunctionCacheImpl) resolveLatest(functionName, want string) (*FunctionB
 	}
 }
 
+// store writes a FunctionBundle to local caches (metadata and binary).
 func (f *FunctionCacheImpl) store(bundle *FunctionBundle) error {
 	if err := f.MetadataBinaries.Set(bundle.Metadata, bundle.Binary); err != nil {
 		f.log.Error("Failed to store bundle in cache",
@@ -228,6 +274,8 @@ func (f *FunctionCacheImpl) store(bundle *FunctionBundle) error {
 	return nil
 }
 
+// fetchAndStore fetches a function bundle from the remote registry and stores it locally.
+// It uses singleflight to ensure only one fetch per (name, version) key at a time.
 func (f *FunctionCacheImpl) fetchAndStore(functionName string, functionVersion string) (*FunctionBundle, error) {
 	if functionVersion == "latest" {
 		panic("This should be unreachable!!!")

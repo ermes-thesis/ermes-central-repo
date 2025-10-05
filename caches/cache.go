@@ -54,6 +54,7 @@ type CacheItem[T any] struct {
 //
 // If ttl is zero, items never expire and eviction is determined solely
 // by the LRU policy.
+// It is safe for concurrent use by multiple goroutines
 type BaseCache[T any] struct {
 	cache *lru.Cache[string, CacheItem[T]]
 	ttl   time.Duration
