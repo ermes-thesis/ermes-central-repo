@@ -11,7 +11,7 @@ services:
       - "3000:8080"
     volumes:
       - ..:/workspaces/ermes-central-repo:cached
-      - ../../ermes-wasm-pool:/workspaces/ermes-wasm-pool:cached
+      - ../../ermes-common:/workspaces/ermes-common:cached
       - gocache:/go/pkg/mod  # Go module cache persistente
       - gocachebin:/root/.cache/go-build # cache di compilazione
     cap_add:

@@ -124,9 +124,9 @@ func run(ctx context.Context) error {
 		"redis_addr", cfg.RedisAddr,
 		"redis_port", cfg.RedisPort,
 		"redis_db", cfg.RedisDB,
-		"fn_cache_size", cfg.FunctionCacheSize,
-		"fn_cache_bin_dir", cfg.FunctionCacheBinDir,
-		"fn_cache_ttl", cfg.FunctionCacheTtl,
+		"fn_cache_size", cfg.FunctionCache.Size,
+		"fn_cache_bin_dir", cfg.FunctionCache.BinDir,
+		"fn_cache_ttl", cfg.FunctionCache.Ttl,
 		"function_registry_addr", cfg.FunctionRegistryAddress,
 		"function_registry_port", cfg.FunctionRegistryPort,
 	)

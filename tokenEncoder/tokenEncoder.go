@@ -3,10 +3,11 @@ package tokenEncoder
 import (
 	"crypto/rsa"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type GroupTokenClaims struct {

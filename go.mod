@@ -3,11 +3,12 @@ module ermes-central-repo
 go 1.24.3
 
 require (
+	github.com/ermes-thesis/ermes-common/caches v0.0.0-00010101000000-000000000000
 	github.com/ermes-thesis/ermes-common/logger v0.0.0-00010101000000-000000000000
+	github.com/ermes-thesis/ermes-common/model v0.0.0-00010101000000-000000000000
 	github.com/ermes-thesis/ermes-common/wasm-pool v0.0.0-00010101000000-000000000000
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/redis/go-redis/v9 v9.9.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/pflag v1.0.10
@@ -22,14 +23,19 @@ replace github.com/ermes-thesis/ermes-common/logger => ../ermes-common/logger
 
 replace github.com/ermes-thesis/ermes-common/model => ../ermes-common/model
 
+replace github.com/ermes-thesis/ermes-common/caches => ../ermes-common/caches
+
+replace github.com/ermes-thesis/ermes-common/utils => ../ermes-common/utils
+
 require (
 	github.com/bytecodealliance/wasmtime-go/v37 v37.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/ermes-thesis/ermes-common/model v0.0.0-00010101000000-000000000000 // indirect
+	github.com/ermes-thesis/ermes-common/utils v0.0.0-00010101000000-000000000000 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect

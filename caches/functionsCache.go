@@ -1,12 +1,13 @@
 package caches
 
 import (
-	"ermes-central-repo/caches/metadata"
 	"ermes-central-repo/config"
 	"fmt"
 	"slices"
 
+	"github.com/ermes-thesis/ermes-common/caches"
 	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/ermes-thesis/ermes-common/model"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -33,7 +34,7 @@ type FunctionCache interface {
 	// Returns:
 	//	 - *metadata.FunctionMetadata: the retrieved metadata object of the function.
 	//	 - error: non-nil if the metadata could not be retrieved or fetched.
-	GetMetadata(functionName string, functionVersion string) (*metadata.FunctionMetadata, error)
+	GetMetadata(functionName string, functionVersion string) (*model.FunctionMetadata, error)
 }
 
 // FunctionCacheImpl is a concrete implementation of FunctionCache that uses
@@ -45,23 +46,30 @@ type FunctionCache interface {
 // are safe for concurrent use, also FunctionCacheImpl is safe for concurrent uses
 // by multiple goroutines
 type FunctionCacheImpl struct {
-	MetadataBinaries *MetadataBinaryCache
-	LatestVersions   GenericCache[string]
-	fetcher          Fetcher[*FunctionBundle]
+	MetadataBinaries *caches.MetadataBinaryCache
+	LatestVersions   caches.GenericCache[string]
+	fetcher          caches.Fetcher[*FunctionBundle]
 	group            singleflight.Group
 	log              *logger.Logger
+}
+
+// FunctionBundle represents a packaged function, consisting of
+// the function's compiled binary and its associated metadata.
+type FunctionBundle struct {
+	Binary   []byte
+	Metadata model.FunctionMetadata
 }
 
 // NewFunctionCache creates a FunctionCacheImpl using the provided fetcher.
 //
 // It initializes metadata/binary caches and a latest-version tracker based on
 // the configuration parameters
-func NewFunctionCache(cfg *config.Config, fetcher Fetcher[*FunctionBundle], log *logger.Logger) (*FunctionCacheImpl, error) {
-	binCache, err := NewMetadataBinaryCache(cfg)
+func NewFunctionCache(cfg *config.Config, fetcher caches.Fetcher[*FunctionBundle], log *logger.Logger) (*FunctionCacheImpl, error) {
+	binCache, err := caches.NewMetadataBinaryCache(cfg.FunctionCache)
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
 	}
-	latest, err := NewBaseCache[string](cfg.FunctionCacheSize, cfg.FunctionCacheTtl)
+	latest, err := caches.NewBaseCache[string](cfg.FunctionCache.Size, cfg.FunctionCache.Ttl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating latest versions cache: %v", err)
 	}
@@ -77,11 +85,11 @@ func NewFunctionCache(cfg *config.Config, fetcher Fetcher[*FunctionBundle], log 
 // NewDefaultFunctionCache creates a FunctionCacheImpl with a default remote Fetcher
 // that will communicate with the Ermes Function Registry node
 func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionCacheImpl, error) {
-	binCache, err := NewMetadataBinaryCache(cfg)
+	binCache, err := caches.NewMetadataBinaryCache(cfg.FunctionCache)
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
 	}
-	latest, err := NewBaseCache[string](cfg.FunctionCacheSize, cfg.FunctionCacheTtl)
+	latest, err := caches.NewBaseCache[string](cfg.FunctionCache.Size, cfg.FunctionCache.Ttl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating latest versions cache: %v", err)
 	}
@@ -89,7 +97,7 @@ func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionC
 	return &FunctionCacheImpl{
 		MetadataBinaries: binCache,
 		LatestVersions:   latest,
-		fetcher:          NewRemoteBundleFetcher(fmt.Sprintf("http://%s:%s", cfg.FunctionRegistryAddress, cfg.FunctionRegistryPort), cfg.ErmesSecret),
+		fetcher:          caches.NewRemoteBundleFetcher[FunctionBundle](fmt.Sprintf("http://%s:%s", cfg.FunctionRegistryAddress, cfg.FunctionRegistryPort), cfg.ErmesSecret),
 		group:            singleflight.Group{},
 		log:              log,
 	}, nil
@@ -150,7 +158,7 @@ func (f *FunctionCacheImpl) GetBinary(functionName string, functionVersion strin
 
 // GetMetadata returns the function metadata from cache or fetches it from the
 // remote registry if not present or outdated. Handles "latest" resolution.
-func (f *FunctionCacheImpl) GetMetadata(functionName string, functionVersion string) (*metadata.FunctionMetadata, error) {
+func (f *FunctionCacheImpl) GetMetadata(functionName string, functionVersion string) (*model.FunctionMetadata, error) {
 	if functionVersion == "latest" {
 		bundle, err := f.resolveLatest(functionName, "metadata")
 		if err != nil {

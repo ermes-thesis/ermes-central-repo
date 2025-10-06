@@ -6,27 +6,26 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ermes-thesis/ermes-common/caches"
 	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	JWTPemPath              string        `mapstructure:"jwt_pem_path"`
-	JWTExpirationTime       time.Duration `mapstructure:"jwt_expiration_time"`
-	RedisAddr               string        `mapstructure:"redis_addr"`
-	RedisPort               string        `mapstructure:"redis_port"`
-	RedisPassword           string        `mapstructure:"redis_password"`
-	RedisDB                 int           `mapstructure:"redis_db"`
-	HTTPPort                string        `mapstructure:"http_port"`
-	WASMPoolSize            int           `mapstructure:"wasm_pool_size"`
-	ErmesSecret             string        `mapstructure:"ermes_secret"`
-	ClientSecret            string        `mapstructure:"client_secret"`
-	DevSecret               string        `mapstructure:"dev_secret"`
-	FunctionRegistryAddress string        `mapstructure:"function_registry_address"`
-	FunctionRegistryPort    string        `mapstructure:"function_registry_port"`
-	FunctionCacheSize       int           `mapstructure:"function_cache_size"`
-	FunctionCacheBinDir     string        `mapstructure:"function_cache_bin_dir"`
-	FunctionCacheTtl        time.Duration `mapstructure:"function_cache_ttl"`
+	JWTPemPath              string                           `mapstructure:"jwt_pem_path"`
+	JWTExpirationTime       time.Duration                    `mapstructure:"jwt_expiration_time"`
+	RedisAddr               string                           `mapstructure:"redis_addr"`
+	RedisPort               string                           `mapstructure:"redis_port"`
+	RedisPassword           string                           `mapstructure:"redis_password"`
+	RedisDB                 int                              `mapstructure:"redis_db"`
+	HTTPPort                string                           `mapstructure:"http_port"`
+	WASMPoolSize            int                              `mapstructure:"wasm_pool_size"`
+	ErmesSecret             string                           `mapstructure:"ermes_secret"`
+	ClientSecret            string                           `mapstructure:"client_secret"`
+	DevSecret               string                           `mapstructure:"dev_secret"`
+	FunctionRegistryAddress string                           `mapstructure:"function_registry_address"`
+	FunctionRegistryPort    string                           `mapstructure:"function_registry_port"`
+	FunctionCache           caches.MetadataBinaryCacheConfig `mapstructure:"function_cache"`
 }
 
 func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
@@ -59,9 +58,11 @@ func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
 	v.SetDefault("wasm_pool_size", 10)
 	v.SetDefault("function_registry_address", "localhost")
 	v.SetDefault("function_registry_port", "8080")
-	v.SetDefault("function_cache_size", 100)
-	v.SetDefault("function_cache_bin_dir", "./function_cache")
-	v.SetDefault("function_cache_ttl", 0)
+	v.SetDefault("function_cache", caches.MetadataBinaryCacheConfig{
+		Size:   100,
+		BinDir: "./function_cache",
+		Ttl:    0,
+	})
 
 	v.AutomaticEnv()
 
