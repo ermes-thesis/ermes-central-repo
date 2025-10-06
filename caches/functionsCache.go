@@ -97,7 +97,7 @@ func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionC
 	return &FunctionCacheImpl{
 		MetadataBinaries: binCache,
 		LatestVersions:   latest,
-		fetcher:          caches.NewRemoteBundleFetcher[FunctionBundle](fmt.Sprintf("http://%s:%s", cfg.FunctionRegistryAddress, cfg.FunctionRegistryPort), cfg.ErmesSecret),
+		fetcher:          caches.NewRemoteBundleFetcher[FunctionBundle](fmt.Sprintf("http://%s:%s/retrieve-auth-function", cfg.FunctionRegistryAddress, cfg.FunctionRegistryPort), cfg.ErmesSecret),
 		group:            singleflight.Group{},
 		log:              log,
 	}, nil
