@@ -1,4 +1,4 @@
-JWT_PEM_PATH: ".devcontainer/private.pem"
+JWT_PEM_PATH: "keys/private.pem"
 JWT_EXPIRATION_TIME: "2000s"
 REDIS_ADDR: "redis"
 REDIS_PORT: "6379"
