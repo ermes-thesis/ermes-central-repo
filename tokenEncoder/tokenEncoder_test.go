@@ -1,20 +1,17 @@
 package tokenEncoder
 
 import (
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEncodeGroupToken_Success(t *testing.T) {
-	jwtPemPath := "../.devcontainer/private.pem"
+	jwtPemPath := "../keys/private.pem"
 	jwtExpirationTime := 24 * time.Hour
-	t.Setenv("JWT_EXPIRATION_TIME", "3600")
-	t.Setenv("JWT_PEM_PATH", "../.devcontainer/private.pem")
-	t.Setenv("CLIENT_SECRET", "very VERY secret")
-	t.Setenv("ERMES_SECRET", "vey secret")
 
 	tknEncoder, err := NewGroupTokenEncoder(jwtPemPath, jwtExpirationTime)
 	require.NoError(t, err)
@@ -25,7 +22,7 @@ func TestEncodeGroupToken_Success(t *testing.T) {
 	require.NoError(t, err)
 
 	token, err := jwt.ParseWithClaims(signedTokenStr, &GroupTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		pKeyBytes, err := os.ReadFile("../.devcontainer/public.pem")
+		pKeyBytes, err := os.ReadFile("../keys/public.pem")
 		if err != nil {
 			return nil, err
 		}
