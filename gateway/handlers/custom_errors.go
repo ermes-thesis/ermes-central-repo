@@ -34,4 +34,9 @@ var (
 		message:    "Authentication failed",
 		statusCode: http.StatusUnauthorized,
 	}
+
+	InvalidAuthFunctionErr = HttpError{
+		message:    "Invalid authentication function",
+		statusCode: http.StatusInternalServerError,
+	}
 )

@@ -2,22 +2,22 @@ package handlers
 
 import (
 	"encoding/json"
+	"ermes-central-repo/caches"
 	"ermes-central-repo/db"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/ermes-thesis/ermes-common/wasm-pool"
 )
 
-func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log *logger.Logger, fnCacheBinDir string) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log *logger.Logger, cache caches.FunctionCache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
-		userId, httpErr := checkHTTPReqAuth(r, wasmPool, activeAuthFn, fnCacheBinDir)
+		userId, httpErr := checkHTTPReqAuth(r, wasmPool, activeAuthFn, cache)
 		if httpErr != nil {
 			log.WarnfWith("Authorization failed while executing '%s' authentication function",
 				[]any{*activeAuthFn},
@@ -101,7 +101,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, toke
 	}
 }
 
-func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn *string, fnCacheBinDir string) (string, *HttpError) {
+func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn *string, cache caches.FunctionCache) (string, *HttpError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "ERROR_ID", &NoAuthHeaderErr
@@ -112,13 +112,25 @@ func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn 
 	}
 
 	authToken := strings.TrimPrefix(authHeader, AuthPrefix)
+
+	if *activeAuthFn == "" {
+		return "ERROR_ID", &InvalidAuthFunctionErr
+	}
+
+	authFn := strings.SplitN(*activeAuthFn, ":", 2)
+
+	wasmBinary, err := cache.GetBinary(authFn[0], authFn[1])
+	if err != nil {
+		return "ERROR_ID", &InvalidAuthFunctionErr
+	}
+
 	executor := wasmPool.Acquire()
-	reposnse := executor.Invoke(filepath.Join(fnCacheBinDir, *activeAuthFn), "authEntry", []byte(authToken))
+	response := executor.Invoke(wasmBinary, "authEntry", []byte(authToken))
 	executor.Release()
 
-	if reposnse.HttpCode != 200 {
+	if response.HttpCode != 200 {
 		return "ERROR_ID", &AuthFailedErr
 	}
 
-	return reposnse.Response.(string), nil
+	return response.Response.(string), nil
 }

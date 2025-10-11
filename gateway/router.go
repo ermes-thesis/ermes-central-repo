@@ -17,7 +17,7 @@ func (s *Server) initRouter() {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{ "message": "Hello World" }`)
 	})
-	s.router.HandleFunc("GET /token", filterClientSecret(s.log, ermesClientLibSecret, handlers.RetrieveGroupToken(s.redisClient, s.wasmPool, s.tokenEncoder, &s.activeAuthFn, s.log, s.nodeCfg.FunctionCache.BinDir)))
+	s.router.HandleFunc("GET /token", filterClientSecret(s.log, ermesClientLibSecret, handlers.RetrieveGroupToken(s.redisClient, s.wasmPool, s.tokenEncoder, &s.activeAuthFn, s.log, s.cache)))
 
 	s.router.HandleFunc("POST /group/{groupName}/{userId}", filterErmesSecret(s.log, ermesSecret, handlers.AddToGroupHandler(s.redisClient, s.log)))
 
