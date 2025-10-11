@@ -95,7 +95,11 @@ func run(ctx context.Context) error {
 	generalLogger.Infof("WASM pool created successfully with %d executors", cfg.WASMPoolSize)
 
 	// Creating a RedisClient interface to access underlying DB
-	redisClient := db.NewRedisClient(cfg, redisLogger.With("component", "REDIS_DB"))
+	redisClient, err := db.NewRedisClient(cfg, redisLogger.With("component", "REDIS_DB"))
+	if err != nil {
+		generalLogger.Error("Failed to initialize redis client", "error", err)
+		return fmt.Errorf("unable to initialize redis client: %w", err)
+	}
 	generalLogger.Info("Redis client created successfully", "db_addr", cfg.RedisAddr, "db_port", cfg.RedisPort, "db_index", cfg.RedisDB)
 
 	// Creating new function cache to cache retrieve authentication function(s)

@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"ermes-central-repo/config"
 
 	"github.com/ermes-thesis/ermes-common/logger"
@@ -19,12 +20,19 @@ type GenericDB interface {
 	Close() error
 }
 
-func NewRedisClient(cfg *config.Config, log *logger.Logger) GenericDB {
+func NewRedisClient(cfg *config.Config, log *logger.Logger) (GenericDB, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddr + ":" + cfg.RedisPort,
 		Password: cfg.RedisPassword,
 		DB:       cfg.RedisDB,
 	})
 
-	return &RedisClient{client: rdb, log: log}
+	pong, err := rdb.Ping(context.Background()).Result()
+	if err != nil {
+		log.Error("Failed to connect to Redis", "error", err)
+		return nil, err
+	}
+	log.Info("Connected to Redis", "response", pong)
+
+	return &RedisClient{client: rdb, log: log}, nil
 }
