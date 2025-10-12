@@ -13,6 +13,15 @@ func SetAuthFunctionHandler(cache caches.FunctionCache, activeAuthFun *string, l
 		defer r.Body.Close()
 
 		fnName := r.PathValue("name")
+		if fnName == "" {
+			log.Warn("Missing function name in path request",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+			)
+			http.Error(w, "Missing function name in path", http.StatusBadRequest)
+			return
+		}
 		fnVersion := r.PathValue("version")
 		if fnVersion == "" {
 			fnVersion = "latest"
