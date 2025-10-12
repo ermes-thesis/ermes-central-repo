@@ -175,7 +175,7 @@ func TestAddGroupToUser_Fail(t *testing.T) {
 
 	// Add two participant to the group
 	err = redisClient.AddGroupToUser("non_existing_group", "participant1")
-	require.EqualError(t, err, "group does not exist")
+	require.EqualError(t, err, "failed to add user to group: group does not exist")
 }
 
 func TestRemoveGroupFromUser(t *testing.T) {
