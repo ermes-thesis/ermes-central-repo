@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const GroupListKey = "existing_groups"
+const GroupListKey = "info:existing_groups"
 
 type GenericDB interface {
 	AddGroupToUser(groupName string, userId string) error
