@@ -19,7 +19,7 @@ func DeleteGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.Handl
 				"method", r.Method,
 				"path", r.URL.RequestURI(),
 			)
-			http.Error(w, "Missing groupName in request path", http.StatusBadRequest)
+			http.Error(w, "Missing groupName in path", http.StatusBadRequest)
 			return
 		}
 
