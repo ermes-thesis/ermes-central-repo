@@ -11,8 +11,7 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  ermes-central-repo/db:
-  ermes-central-repo/caches:
+  ermes-central-repo:
   github.com/ermes-thesis/ermes-common:
     config:
       dir: 'mocks/ermes-common/{{.InterfaceDirRelative}}'
