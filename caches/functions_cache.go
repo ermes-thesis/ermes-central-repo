@@ -69,7 +69,7 @@ func NewFunctionCache(cfg *config.Config, fetcher caches.Fetcher[*FunctionBundle
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
 	}
-	latest, err := caches.NewBaseCache[string](cfg.FunctionCache.Size, cfg.FunctionCache.Ttl)
+	latest, err := caches.NewBaseCache[string](cfg.LatestCache.Size, cfg.LatestCache.Ttl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating latest versions cache: %v", err)
 	}
@@ -78,6 +78,7 @@ func NewFunctionCache(cfg *config.Config, fetcher caches.Fetcher[*FunctionBundle
 		MetadataBinaries: binCache,
 		LatestVersions:   latest,
 		fetcher:          fetcher,
+		group:            singleflight.Group{},
 		log:              log,
 	}, nil
 }
@@ -89,7 +90,7 @@ func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionC
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
 	}
-	latest, err := caches.NewBaseCache[string](cfg.FunctionCache.Size, cfg.FunctionCache.Ttl)
+	latest, err := caches.NewBaseCache[string](cfg.LatestCache.Size, cfg.LatestCache.Ttl)
 	if err != nil {
 		return nil, fmt.Errorf("error creating latest versions cache: %v", err)
 	}
