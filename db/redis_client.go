@@ -36,7 +36,7 @@ func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 		return errors.New("group does not exist")
 	}
 
-	if _, err := r.client.SAdd(ctx, userKey, groupName).Result(); err != nil {
+	if _, err = r.client.SAdd(ctx, userKey, groupName).Result(); err != nil {
 		r.log.Error("Failed to add user to group",
 			"group_name", groupName,
 			"user_id", userId,

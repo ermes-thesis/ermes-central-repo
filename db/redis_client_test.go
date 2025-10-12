@@ -158,6 +158,26 @@ func TestAddGroupToUser(t *testing.T) {
 	require.Contains(t, groups, "initial_empty_group")
 }
 
+func TestAddGroupToUser_Fail(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
+
+	// Create an empty group
+	err := redisClient.CreateGroup("initial_empty_group", []string{})
+	require.NoError(t, err)
+
+	// Check if the group exists
+	groups, err := redisClient.GetExistingGroups()
+	require.NoError(t, err)
+	require.Equal(t, 1, len(groups))
+	require.Contains(t, groups, "initial_empty_group")
+
+	// Add two participant to the group
+	err = redisClient.AddGroupToUser("non_existing_group", "participant1")
+	require.EqualError(t, err, "group does not exist")
+}
+
 func TestRemoveGroupFromUser(t *testing.T) {
 	redisClient, shutdown := StartRedisTestContainer(t)
 	defer shutdown()
@@ -181,6 +201,25 @@ func TestRemoveGroupFromUser(t *testing.T) {
 	require.Equal(t, 1, len(groups))
 	require.NotContains(t, groups, "first_group")
 	require.Contains(t, groups, "second_group")
+
+	// Check silent fail
+	err = redisClient.RemoveGroupFromUser("first_group", "non_existing_user")
+	require.NoError(t, err)
+	users, err := redisClient.GetGroupUsers("first_group")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(users))
+	require.Contains(t, users, "participant2")
+	require.Contains(t, users, "participant3")
+}
+
+func TestRemoveGroupFromUser_Fail(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
+
+	err := redisClient.CreateGroup("first_group", []string{"participant1", "participant2", "participant3"})
+	require.NoError(t, err)
+
 }
 
 func TestDeleteGroup(t *testing.T) {
@@ -238,6 +277,10 @@ func TestGetUserGroups(t *testing.T) {
 	require.Contains(t, groups, "first_group")
 	require.Contains(t, groups, "second_group")
 	require.NotContains(t, groups, "third_group")
+
+	groups, err = redisClient.GetUserGroups("non_existing_user")
+	require.NoError(t, err)
+	require.Empty(t, groups)
 }
 
 func TestGetGroupUsers(t *testing.T) {
