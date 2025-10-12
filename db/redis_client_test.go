@@ -96,7 +96,7 @@ func StartRedisTestContainer(t *testing.T) (*RedisClient, func()) {
 	}
 }
 
-func TestRedisClient(t *testing.T) {
+func TestCreateGroup(t *testing.T) {
 	redisClient, shutdown := StartRedisTestContainer(t)
 	defer shutdown()
 	defer redisClient.Close()
@@ -124,17 +124,22 @@ func TestRedisClient(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(groups))
 	require.Contains(t, groups, "test_group_name")
+}
+
+func TestAddGroupToUser(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
 
 	// Create an empty group
-	err = redisClient.CreateGroup("initial_empty_group", []string{})
+	err := redisClient.CreateGroup("initial_empty_group", []string{})
 	require.NoError(t, err)
 
-	// Check if the group exists and it is really empty
-	groups, err = redisClient.GetExistingGroups()
+	// Check if the group exists
+	groups, err := redisClient.GetExistingGroups()
 	require.NoError(t, err)
-	require.Equal(t, 2, len(groups))
+	require.Equal(t, 1, len(groups))
 	require.Contains(t, groups, "initial_empty_group")
-	require.Contains(t, groups, "test_group_name")
 
 	// Add two participant to the group
 	err = redisClient.AddGroupToUser("initial_empty_group", "participant1")
@@ -145,52 +150,108 @@ func TestRedisClient(t *testing.T) {
 	// Assert that the two participant were actually added
 	groups, err = redisClient.GetUserGroups("participant1")
 	require.NoError(t, err)
-	require.Equal(t, 2, len(groups))
+	require.Equal(t, 1, len(groups))
 	require.Contains(t, groups, "initial_empty_group")
 	groups, err = redisClient.GetUserGroups("participant2")
 	require.NoError(t, err)
-	require.Equal(t, 2, len(groups))
+	require.Equal(t, 1, len(groups))
 	require.Contains(t, groups, "initial_empty_group")
+}
 
-	// Remove a user from a group
-	err = redisClient.RemoveGroupFromUser("initial_empty_group", "participant1")
+func TestRemoveGroupFromUser(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
+
+	err := redisClient.CreateGroup("first_group", []string{"participant1", "participant2", "participant3"})
+	require.NoError(t, err)
+	err = redisClient.CreateGroup("second_group", []string{"participant1", "participant2"})
 	require.NoError(t, err)
 
-	// Check that the participant has been removed
+	groups, err := redisClient.GetUserGroups("participant1")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(groups))
+	require.Contains(t, groups, "first_group")
+	require.Contains(t, groups, "second_group")
+
+	err = redisClient.RemoveGroupFromUser("first_group", "participant1")
+	require.NoError(t, err)
 	groups, err = redisClient.GetUserGroups("participant1")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(groups))
-	require.Contains(t, groups, "test_group_name")
-	require.NotContains(t, groups, "initial_empty_group")
+	require.NotContains(t, groups, "first_group")
+	require.Contains(t, groups, "second_group")
+}
 
-	groups, err = redisClient.GetUserGroups("participant2")
+func TestDeleteGroup(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
+
+	err := redisClient.CreateGroup("first_group", []string{"participant1", "participant2", "participant3"})
+	require.NoError(t, err)
+	err = redisClient.CreateGroup("second_group", []string{"participant1", "participant2"})
+	require.NoError(t, err)
+
+	groups, err := redisClient.GetExistingGroups()
 	require.NoError(t, err)
 	require.Equal(t, 2, len(groups))
-	require.Contains(t, groups, "test_group_name")
-	require.Contains(t, groups, "initial_empty_group")
+	require.Contains(t, groups, "first_group")
+	require.Contains(t, groups, "second_group")
 
-	// Delete a group
-	groupsBefore, err := redisClient.GetExistingGroups()
-	require.NoError(t, err)
-	require.Equal(t, 2, len(groupsBefore))
-	require.Contains(t, groups, "initial_empty_group")
-	require.Contains(t, groups, "test_group_name")
-	part1groupsBefore, err := redisClient.GetUserGroups("participant1")
-	require.NoError(t, err)
-	require.Equal(t, 1, len(part1groupsBefore))
-	require.Contains(t, part1groupsBefore, "test_group_name")
-	require.NotContains(t, part1groupsBefore, "initial_empty_group")
-	err = redisClient.DeleteGroup("initial_empty_group")
+	err = redisClient.DeleteGroup("first_group")
 	require.NoError(t, err)
 
-	// Assert that the group has been deleted, and no other participant in that group is associated with it
-	groupsNow, err := redisClient.GetExistingGroups()
+	groups, err = redisClient.GetExistingGroups()
 	require.NoError(t, err)
-	require.Equal(t, 1, len(groupsNow))
-	require.NotContains(t, groupsNow, "initial_empty_group")
-	part2groupsNow, err := redisClient.GetUserGroups("participant1")
+	require.Equal(t, 1, len(groups))
+	require.NotContains(t, groups, "first_group")
+	require.Contains(t, groups, "second_group")
+
+	user1groups, err := redisClient.GetUserGroups("participant1")
 	require.NoError(t, err)
-	require.Equal(t, 1, len(part2groupsNow))
-	require.Contains(t, part2groupsNow, "test_group_name")
-	require.NotContains(t, part2groupsNow, "initial_empty_group")
+	require.Equal(t, 1, len(user1groups))
+	require.Contains(t, user1groups, "second_group")
+	require.NotContains(t, user1groups, "first_group")
+
+	user2groups, err := redisClient.GetUserGroups("participant2")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(user2groups))
+	require.Contains(t, user2groups, "second_group")
+	require.NotContains(t, user2groups, "first_group")
+}
+
+func TestGetUserGroups(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
+
+	err := redisClient.CreateGroup("first_group", []string{"participant1", "participant2", "participant3"})
+	require.NoError(t, err)
+	err = redisClient.CreateGroup("second_group", []string{"participant1", "participant2"})
+	require.NoError(t, err)
+	err = redisClient.CreateGroup("third_group", []string{"participant2", "participant4"})
+
+	groups, err := redisClient.GetUserGroups("participant1")
+	require.NoError(t, err)
+	require.Equal(t, 2, len(groups))
+	require.Contains(t, groups, "first_group")
+	require.Contains(t, groups, "second_group")
+	require.NotContains(t, groups, "third_group")
+}
+
+func TestGetGroupUsers(t *testing.T) {
+	redisClient, shutdown := StartRedisTestContainer(t)
+	defer shutdown()
+	defer redisClient.Close()
+
+	err := redisClient.CreateGroup("first_group", []string{"participant1", "participant2", "participant3"})
+	require.NoError(t, err)
+
+	groups, err := redisClient.GetGroupUsers("first_group")
+	require.NoError(t, err)
+	require.Equal(t, 3, len(groups))
+	require.Contains(t, groups, "participant1")
+	require.Contains(t, groups, "participant2")
+	require.Contains(t, groups, "participant3")
 }
