@@ -117,7 +117,7 @@ func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn 
 		return "ERROR_ID", &InvalidAuthFunctionErr
 	}
 
-	authFn := strings.SplitN(*activeAuthFn, ":", 2)
+	authFn := strings.SplitN(*activeAuthFn, "@", 2)
 
 	wasmBinary, err := cache.GetBinary(authFn[0], authFn[1])
 	if err != nil {
