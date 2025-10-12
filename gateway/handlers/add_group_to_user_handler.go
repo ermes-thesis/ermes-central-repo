@@ -12,17 +12,6 @@ func AddToGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.Handle
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
-		userId := r.PathValue("userId")
-		if userId == "" {
-			log.Warn("Missing userId in path request",
-				"remote_addr", r.RemoteAddr,
-				"method", r.Method,
-				"path", r.URL.RequestURI(),
-			)
-			http.Error(w, "Missing userId in path", http.StatusBadRequest)
-			return
-		}
-
 		groupName := r.PathValue("groupName")
 		if groupName == "" {
 			log.Warn("Missing groupName in path request",
@@ -30,10 +19,21 @@ func AddToGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.Handle
 				"method", r.Method,
 				"path", r.URL.RequestURI(),
 			)
-			log.Debug("Missing groupName in path request",
-				"user_id", userId,
+			http.Error(w, "Missing groupName in path", http.StatusBadRequest)
+			return
+		}
+
+		userId := r.PathValue("userId")
+		if userId == "" {
+			log.Warn("Missing userId in path request",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
 			)
-			http.Error(w, "Missing groupName", http.StatusBadRequest)
+			log.Debug("Missing userId in path request",
+				"group_name", groupName,
+			)
+			http.Error(w, "Missing userId in path", http.StatusBadRequest)
 			return
 		}
 
