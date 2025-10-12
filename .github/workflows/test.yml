@@ -37,6 +37,14 @@ jobs:
           go-version: "1.24"
           cache-dependency-path: ermes-central-repo/go.sum
 
+      - name: Install mockery
+        run: go install github.com/vektra/mockery/v3@latest
+
+      - name: Generate mocks
+        run: |
+          cd ermes-central-repo
+          mockery
+
       - name: Install Go CTRF Reporter
         run: go install github.com/ctrf-io/go-ctrf-json-reporter/cmd/go-ctrf-json-reporter@latest
 
