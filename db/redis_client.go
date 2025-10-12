@@ -150,6 +150,11 @@ func (r *RedisClient) DeleteGroup(groupName string) error {
 		}
 	}
 
+	_, err := r.client.SRem(ctx, GroupListKey, groupName).Result()
+	if err != nil {
+		r.log.Error("Failed to remove group from existing ones")
+	}
+
 	r.log.Infof("Group '%s' deleted successfully", groupName)
 	return nil
 }
@@ -165,6 +170,64 @@ func (r *RedisClient) GetExistingGroups() ([]string, error) {
 
 	r.log.Infof("Retrieved existing groups successfully: %v", groups)
 	return groups, nil
+}
+
+func (r *RedisClient) GetGroupUsers(groupName string) ([]string, error) {
+	ctx := context.Background()
+
+	var usersInGroup []string
+
+	var cursor uint64
+	for {
+		var userIDs []string
+		var err error
+		userIDs, cursor, err = r.client.Scan(ctx, cursor, "data:*", 100).Result()
+		if err != nil {
+			r.log.Error("Failed to scan userIDs during group participant retrieval",
+				"group_name", groupName,
+				"error", err)
+			r.log.Debug("Failed to scan userIDs during group participant retrieval",
+				"cursor", cursor,
+				"userIDs", userIDs,
+			)
+			return nil, fmt.Errorf("failed to scan userIDs participant retrieval: %v", err)
+		}
+
+		pipe := r.client.Pipeline()
+		var cmds []*redis.BoolCmd
+
+		for _, userId := range userIDs {
+			cmds = append(cmds, pipe.SIsMember(ctx, userId, groupName))
+		}
+
+		_, err = pipe.Exec(ctx)
+		if err != nil && !errors.Is(err, redis.Nil) {
+			r.log.Error("Failed to execute pipeline during group participant retrieval",
+				"group_name", groupName,
+				"error", err)
+			return nil, fmt.Errorf("failed to check group membership: %v", err)
+		}
+
+		for index, cmd := range cmds {
+			isIn, err := cmd.Result()
+			if err != nil {
+				r.log.Error("Failed to check if a user was in a group",
+					"group_name", groupName,
+					"user_id", userIDs[index],
+					"error", err,
+				)
+				return nil, fmt.Errorf("failed to remove user '%s' from group '%s': %v", userIDs[index], groupName, err)
+			}
+			if isIn {
+				usersInGroup = append(usersInGroup, strings.TrimPrefix(userIDs[index], "data:"))
+			}
+		}
+
+		if cursor == 0 {
+			break
+		}
+	}
+	return usersInGroup, nil
 }
 
 func (r *RedisClient) Close() error {

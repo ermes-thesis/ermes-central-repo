@@ -17,6 +17,7 @@ type GenericDB interface {
 	CreateGroup(groupName string, participantIDs []string) error
 	DeleteGroup(groupName string) error
 	GetExistingGroups() ([]string, error)
+	GetGroupUsers(groupName string) ([]string, error)
 	Close() error
 }
 
