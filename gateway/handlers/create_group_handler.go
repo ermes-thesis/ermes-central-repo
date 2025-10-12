@@ -34,7 +34,7 @@ func CreateGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.Handl
 			)
 			log.Debug("Failed to decode participant IDs",
 				"group_name", groupName)
-			http.Error(w, fmt.Sprintf("Invalid participant list: %v", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Invalid participant list: %v", err), http.StatusBadRequest)
 			return
 		}
 
