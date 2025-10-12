@@ -26,6 +26,7 @@ type Config struct {
 	FunctionRegistryAddress string                           `mapstructure:"function_registry_address"`
 	FunctionRegistryPort    string                           `mapstructure:"function_registry_port"`
 	FunctionCache           caches.MetadataBinaryCacheConfig `mapstructure:"function_cache"`
+	LatestCache             caches.LatestCacheConfig         `mapstructure:"latest_cache"`
 }
 
 func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
@@ -62,6 +63,10 @@ func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
 		Size:   100,
 		BinDir: "./function_cache",
 		Ttl:    0,
+	})
+	v.SetDefault("latest_cache", caches.LatestCacheConfig{
+		Size: 100,
+		Ttl:  24 * time.Hour,
 	})
 
 	v.AutomaticEnv()
