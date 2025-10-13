@@ -7,6 +7,7 @@ require (
 	github.com/ermes-thesis/ermes-common/logger v0.0.0-00010101000000-000000000000
 	github.com/ermes-thesis/ermes-common/model v0.0.0-00010101000000-000000000000
 	github.com/ermes-thesis/ermes-common/wasm-pool v0.0.0-00010101000000-000000000000
+	github.com/go-redis/redismock/v9 v9.2.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.9.0
@@ -99,6 +100,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.37.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
