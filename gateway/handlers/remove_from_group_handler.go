@@ -12,18 +12,6 @@ func RemoveFromGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.H
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
-		userId := r.PathValue("userId")
-		if userId == "" {
-			log.Warn("Missing userId in request path",
-				"remote_addr", r.RemoteAddr,
-				"method", r.Method,
-				"path", r.URL.RequestURI(),
-			)
-			log.Debug("Missing userId in request path", "headers", r.Header)
-			http.Error(w, "Missing userId in request path", http.StatusBadRequest)
-			return
-		}
-
 		groupName := r.PathValue("groupName")
 		if groupName == "" {
 			log.Warn("Missing groupName in request path",
@@ -32,10 +20,21 @@ func RemoveFromGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.H
 				"path", r.URL.RequestURI(),
 			)
 			log.Debug("Missing groupName in request path",
-				"user_id", userId,
 				"headers", r.Header,
 			)
-			http.Error(w, "Missing groupName in request path", http.StatusBadRequest)
+			http.Error(w, "Missing groupName in path", http.StatusBadRequest)
+			return
+		}
+
+		userId := r.PathValue("userId")
+		if userId == "" {
+			log.Warn("Missing userId in request path",
+				"remote_addr", r.RemoteAddr,
+				"method", r.Method,
+				"path", r.URL.RequestURI(),
+			)
+			log.Debug("Missing userId in request path", "headers", r.Header, "user_id", userId)
+			http.Error(w, "Missing userId in path", http.StatusBadRequest)
 			return
 		}
 
