@@ -40,7 +40,7 @@ func SetAuthFunctionHandler(cache caches.FunctionCache, activeAuthFun *string, l
 				"fn_version", fnVersion,
 				"headers", r.Header,
 			)
-			http.Error(w, fmt.Sprintf("Function '%s@%s' not found", fnName, fnName), http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("Function '%s@%s' not found", fnName, fnVersion), http.StatusNotFound)
 			return
 		}
 
