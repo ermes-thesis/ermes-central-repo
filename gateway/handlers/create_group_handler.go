@@ -25,17 +25,20 @@ func CreateGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.Handl
 		}
 
 		var participantIDs []string
-		if err := json.NewDecoder(r.Body).Decode(&participantIDs); err != nil {
-			log.Warn("Failed to decode participant IDs",
-				"remote_addr", r.RemoteAddr,
-				"method", r.Method,
-				"path", r.URL.RequestURI(),
-				"error", err,
-			)
-			log.Debug("Failed to decode participant IDs",
-				"group_name", groupName)
-			http.Error(w, fmt.Sprintf("Invalid participant list: %v", err), http.StatusBadRequest)
-			return
+
+		if r.Body != http.NoBody {
+			if err := json.NewDecoder(r.Body).Decode(&participantIDs); err != nil {
+				log.Warn("Failed to decode participant IDs",
+					"remote_addr", r.RemoteAddr,
+					"method", r.Method,
+					"path", r.URL.RequestURI(),
+					"error", err,
+				)
+				log.Debug("Failed to decode participant IDs",
+					"group_name", groupName)
+				http.Error(w, fmt.Sprintf("Invalid participant list: %v", err), http.StatusBadRequest)
+				return
+			}
 		}
 
 		if err := redisClient.CreateGroup(groupName, participantIDs); err != nil {
