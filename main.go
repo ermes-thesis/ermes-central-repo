@@ -119,6 +119,7 @@ func run(ctx context.Context) error {
 		redisClient,
 		tknEncoder,
 		fnCache,
+		"",
 	)
 	generalLogger.Info("Server initialized successfully",
 		"jwt_exp_time", cfg.JWTExpirationTime,
