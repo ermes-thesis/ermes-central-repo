@@ -25,22 +25,25 @@ func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 	ctx := context.Background()
 	backoff := defaultBackoff
 
-	userKey := "data:" + userId
+	userKey := buildUserGroupsKey(userId)
+	groupExistenceKey := buildExistenceGroupKey(groupName)
+	groupKey := buildGroupParticipantsKey(groupName)
 
 	for retries := 0; retries < maxRetries; retries++ {
 		err := r.client.Watch(ctx, func(tx *redis.Tx) error {
-			exists, err := tx.SIsMember(ctx, GroupListKey, groupName).Result()
+			exists, err := tx.Exists(ctx, groupExistenceKey).Result()
 			if err != nil {
 				r.log.Error("Failed to check if group exists", "group_name", groupName, "user_id", userId, "error", err)
 				return fmt.Errorf("failed to check if group exists: %v", err)
 			}
-			if !exists {
+			if exists == 0 {
 				r.log.Warn("Attempted to add user to non-existing group", "group_name", groupName, "user_id", userId)
 				return errors.New("group does not exist")
 			}
 
 			_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
 				pipe.SAdd(ctx, userKey, groupName)
+				pipe.SAdd(ctx, groupKey, userId)
 				return nil
 			})
 			if err != nil {
@@ -48,7 +51,7 @@ func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 				return fmt.Errorf("failed to add user to group: %v", err)
 			}
 			return nil
-		}, GroupListKey)
+		}, groupExistenceKey)
 
 		if errors.Is(err, redis.TxFailedErr) {
 			jitter := time.Duration(rand.Int63n(int64(backoff / 2)))
@@ -86,9 +89,16 @@ func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 
 func (r *RedisClient) RemoveGroupFromUser(groupName string, userId string) error {
 	ctx := context.Background()
-	userKey := "data:" + userId
+	userKey := buildUserGroupsKey(userId)
+	groupKey := buildGroupParticipantsKey(groupName)
 
-	_, err := r.client.SRem(ctx, userKey, groupName).Result()
+	_, err := r.client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.SRem(ctx, userKey, groupName)
+		pipe.SRem(ctx, groupKey, userId)
+
+		return nil
+	})
+
 	if err != nil {
 		r.log.Error("Failed to remove user from group",
 			"group_name", groupName,
@@ -104,7 +114,8 @@ func (r *RedisClient) RemoveGroupFromUser(groupName string, userId string) error
 
 func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 	ctx := context.Background()
-	userKey := "data:" + userId
+
+	userKey := buildUserGroupsKey(userId)
 	groups, err := r.client.SMembers(ctx, userKey).Result()
 	if err != nil {
 		r.log.Error("Failed to retrieve user groups",
@@ -121,84 +132,180 @@ func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) error {
 	ctx := context.Background()
 
-	cmds, err := r.client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
-		pipe.SAdd(ctx, GroupListKey, groupName)
+	backoff := defaultBackoff
 
-		for _, participantID := range participantIDs {
-			pipe.SAdd(ctx, "data:"+participantID, groupName)
+	groupExistenceKey := buildExistenceGroupKey(groupName)
+	groupKey := buildGroupParticipantsKey(groupName)
+
+	var cmds []redis.Cmder
+	for retries := 0; retries < maxRetries; retries++ {
+		err := r.client.Watch(ctx, func(tx *redis.Tx) error {
+			exists, err := tx.Exists(ctx, groupExistenceKey).Result()
+			if err != nil {
+				return err
+			}
+			if exists == 1 {
+				return errors.New("group already exists")
+			}
+
+			cmds, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+				// Create special record that indicate the group existence
+				pipe.Set(ctx, groupExistenceKey, "", 0)
+
+				for _, participantID := range participantIDs {
+					pipe.SAdd(ctx, buildUserGroupsKey(participantID), groupName)
+					pipe.SAdd(ctx, groupKey, participantID)
+				}
+				return nil
+			})
+
+			return err
+		}, groupKey)
+
+		if errors.Is(err, redis.TxFailedErr) {
+			jitter := time.Duration(rand.Int63n(int64(backoff / 2)))
+			time.Sleep(backoff + jitter)
+
+			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+			r.log.Warn("Failed to create group due to a concurrent creation/deletion.", "group_name", groupName, "participants", participantIDs, "retry_num", retries, "max_retries", maxRetries, "backing_off_for", backoff)
+			continue
 		}
-		return nil
-	})
 
-	if err != nil {
-		r.log.Error("Transaction failed",
-			"group_name", groupName,
-			"participant_ids", participantIDs,
-			"error", err,
-		)
+		if err != nil {
+			r.log.Error("Transaction failed",
+				"group_name", groupName,
+				"participant_ids", participantIDs,
+				"error", err,
+			)
 
-		if r.log.Enabled(zerolog.DebugLevel) {
-			for i, cmd := range cmds {
-				if err := cmd.Err(); err != nil {
-					if i == 0 {
-						r.log.Debug("Failed to create group",
-							"group_name", groupName,
-							"participant_ids", participantIDs,
-							"error", err,
-						)
-					} else {
-						r.log.Debug("Failed to add participant to group",
-							"group_name", groupName,
-							"participant_id", participantIDs[i+1],
-							"error", err,
-						)
+			if r.log.Enabled(zerolog.DebugLevel) {
+				for i, cmd := range cmds {
+					if err := cmd.Err(); err != nil {
+						if i == 0 {
+							r.log.Debug("Failed to create group",
+								"group_name", groupName,
+								"participant_ids", participantIDs,
+								"error", err,
+							)
+						} else {
+							r.log.Debug("Failed to add participant to group",
+								"group_name", groupName,
+								"participant_id", participantIDs[i+1],
+								"error", err,
+							)
+						}
 					}
 				}
 			}
+			return fmt.Errorf("failed to create group: %v", err)
 		}
 
-		return fmt.Errorf("failed to create group: %v", err)
+		r.log.Info("Group created successfully",
+			"group_name", groupName,
+			"participant_ids", participantIDs,
+		)
+		return nil
 	}
 
-	r.log.Info("Group created successfully",
+	// We arrive here only if all the retries have failed
+	r.log.Error("Transaction retries exhausted for AddGroupToUser",
 		"group_name", groupName,
-		"participant_ids", participantIDs,
+		"participantIDs", participantIDs,
 	)
-	return nil
+	return errors.New("transaction retries exhausted")
 }
-
-// 	TODO: Atm this cannot be done atomically, meaning that there can be inconsistencies. To do this atomically we would need a reverse index
-// 		  storing for each group its members or add some locks
 
 func (r *RedisClient) DeleteGroup(groupName string) error {
 	ctx := context.Background()
 
-	var cursor uint64
-	for {
-		var userIDs []string
-		var err error
-		userIDs, cursor, err = r.client.Scan(ctx, cursor, "data:*", 100).Result()
-		if err != nil {
-			r.log.Error("Failed to scan userIDs during group deletion",
+	backoff := defaultBackoff
+
+	groupExistenceKey := buildExistenceGroupKey(groupName)
+	groupKey := buildGroupParticipantsKey(groupName)
+
+	for retries := 0; retries < maxRetries; retries++ {
+		err := r.client.Watch(ctx, func(tx *redis.Tx) error {
+			exists, err := tx.Exists(ctx, groupExistenceKey).Result()
+			if err != nil {
+				return err
+			}
+			if exists == 0 {
+				return errors.New("group does not exist")
+			}
+
+			// Get all members atomically within the transaction
+			members, err := tx.SMembers(ctx, groupKey).Result()
+			if err != nil {
+				return fmt.Errorf("failed to get group members: %v", err)
+			}
+
+			_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+				// Remove group from all users
+				for _, userID := range members {
+					pipe.SRem(ctx, buildUserGroupsKey(userID), groupName)
+				}
+				// Delete the group marker and members set
+				pipe.Del(ctx, groupKey)
+				pipe.Del(ctx, groupExistenceKey)
+
+				return nil
+			})
+
+			return err
+		}, groupKey)
+
+		if errors.Is(err, redis.TxFailedErr) {
+			jitter := time.Duration(rand.Int63n(int64(backoff / 2)))
+			time.Sleep(backoff + jitter)
+
+			backoff *= 2
+			if backoff > maxBackoff {
+				backoff = maxBackoff
+			}
+			r.log.Warn("Failed to delete group due to concurrent modification",
 				"group_name", groupName,
-				"error", err)
-			r.log.Debug("Failed to scan userIDs during group deletion",
-				"cursor", cursor,
-				"userIDs", userIDs,
-			)
-			return fmt.Errorf("failed to scan userIDs for deletion: %v", err)
+				"retry_num", retries)
+			continue
 		}
 
-		for _, userID := range userIDs {
-			_, err = r.client.SRem(ctx, userID, groupName).Result()
-			if err != nil {
-				r.log.Error("Failed to remove user from group",
-					"group_name", groupName,
-					"user_id", userID,
-					"error", err,
-				)
-				return fmt.Errorf("failed to remove user '%s' from group '%s': %v", userID, groupName, err)
-			}
+		if err != nil {
+			r.log.Error("Failed to delete group",
+				"group_name", groupName,
+				"error", err)
+			return fmt.Errorf("failed to delete group: %v", err)
+		}
+
+		r.log.Infof("Group '%s' deleted successfully", groupName)
+		return nil
+	}
+
+	return errors.New("transaction retries exhausted")
+}
+
+func (r *RedisClient) GetExistingGroups() ([]string, error) {
+	ctx := context.Background()
+
+	var existingGroups []string
+	var cursor uint64
+	for {
+		var batchGroups []string
+		var err error
+		batchGroups, cursor, err = r.client.Scan(ctx, cursor, "info:*", 100).Result()
+		if err != nil {
+			r.log.Error("Failed to scan existing groups",
+				"error", err)
+			r.log.Debug("Failed to scan existing groups",
+				"cursor", cursor,
+				"batch_groups", batchGroups,
+			)
+			return nil, fmt.Errorf("failed to scan existing groups: %v", err)
+		}
+
+		for _, groupKey := range batchGroups {
+			existingGroups = append(existingGroups, strings.Split(groupKey, ":")[1])
 		}
 
 		if cursor == 0 {
@@ -206,26 +313,9 @@ func (r *RedisClient) DeleteGroup(groupName string) error {
 		}
 	}
 
-	_, err := r.client.SRem(ctx, GroupListKey, groupName).Result()
-	if err != nil {
-		r.log.Error("Failed to remove group from existing ones")
-	}
-
-	r.log.Infof("Group '%s' deleted successfully", groupName)
-	return nil
-}
-
-func (r *RedisClient) GetExistingGroups() ([]string, error) {
-	ctx := context.Background()
-	groups, err := r.client.SMembers(ctx, GroupListKey).Result()
-	if err != nil {
-		r.log.Error("Failed to retrieve existing groups",
-			"error", err)
-		return nil, fmt.Errorf("failed to retrieve existing groups: %v", err)
-	}
-
-	r.log.Infof("Retrieved existing groups successfully: %v", groups)
-	return groups, nil
+	r.log.Infof("Retrieved existing groups successfully: %v", existingGroups[:min(len(existingGroups), 20)])
+	r.log.Debugf("Retrieved existing groups successfully: %v", existingGroups)
+	return existingGroups, nil
 }
 
 func (r *RedisClient) GetGroupUsers(groupName string) ([]string, error) {
@@ -233,56 +323,18 @@ func (r *RedisClient) GetGroupUsers(groupName string) ([]string, error) {
 
 	var usersInGroup []string
 
-	var cursor uint64
-	for {
-		var userIDs []string
-		var err error
-		userIDs, cursor, err = r.client.Scan(ctx, cursor, "data:*", 100).Result()
-		if err != nil {
-			r.log.Error("Failed to scan userIDs during group participant retrieval",
-				"group_name", groupName,
-				"error", err)
-			r.log.Debug("Failed to scan userIDs during group participant retrieval",
-				"cursor", cursor,
-				"userIDs", userIDs,
-			)
-			return nil, fmt.Errorf("failed to scan userIDs participant retrieval: %v", err)
-		}
+	groupKey := buildGroupParticipantsKey(groupName)
 
-		pipe := r.client.Pipeline()
-		var cmds []*redis.BoolCmd
-
-		for _, userId := range userIDs {
-			cmds = append(cmds, pipe.SIsMember(ctx, userId, groupName))
-		}
-
-		_, err = pipe.Exec(ctx)
-		if err != nil && !errors.Is(err, redis.Nil) {
-			r.log.Error("Failed to execute pipeline during group participant retrieval",
-				"group_name", groupName,
-				"error", err)
-			return nil, fmt.Errorf("failed to check group membership: %v", err)
-		}
-
-		for index, cmd := range cmds {
-			isIn, err := cmd.Result()
-			if err != nil {
-				r.log.Error("Failed to check if a user was in a group",
-					"group_name", groupName,
-					"user_id", userIDs[index],
-					"error", err,
-				)
-				return nil, fmt.Errorf("failed to remove user '%s' from group '%s': %v", userIDs[index], groupName, err)
-			}
-			if isIn {
-				usersInGroup = append(usersInGroup, strings.TrimPrefix(userIDs[index], "data:"))
-			}
-		}
-
-		if cursor == 0 {
-			break
-		}
+	usersInGroup, err := r.client.SMembers(ctx, groupKey).Result()
+	if err != nil {
+		r.log.Error("Failed to get group users",
+			"group_name", groupName,
+			"error", err)
+		return nil, fmt.Errorf("failed to get group users: %v", err)
 	}
+
+	r.log.Infof("Retrieved group users successfully: %v", usersInGroup[:min(len(usersInGroup), 20)])
+	r.log.Debugf("Retrieved group users successfully: %v", usersInGroup)
 	return usersInGroup, nil
 }
 
@@ -295,4 +347,16 @@ func (r *RedisClient) Close() error {
 
 	r.log.Info("Redis client closed successfully")
 	return nil
+}
+
+func buildExistenceGroupKey(groupName string) string {
+	return fmt.Sprintf("info:%v", groupName)
+}
+
+func buildGroupParticipantsKey(groupName string) string {
+	return fmt.Sprintf("group:%v", groupName)
+}
+
+func buildUserGroupsKey(userId string) string {
+	return fmt.Sprintf("user:%v", userId)
 }
