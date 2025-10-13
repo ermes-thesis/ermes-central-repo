@@ -1,4 +1,4 @@
-package main
+package integration_test
 
 import (
 	"bytes"
@@ -35,6 +35,7 @@ func createNewLogger(t *testing.T) *logger.Logger {
 	log, err := logger.NewLogger(logger.Config{
 		Level:     zerolog.DebugLevel,
 		AddSource: false,
+		Rolling:   false,
 	})
 	require.NoError(t, err)
 	return log
@@ -50,7 +51,7 @@ func TestGetGroupToken(t *testing.T) {
 		tcredis.WithSnapshotting(10, 1),
 		tcredis.WithLogLevel(tcredis.LogLevelVerbose),
 		testcontainers.WithCmd("redis-stack-server"),
-		testcontainers.WithCmdArgs("--maxmemory", "500mb"),
+		//testcontainers.WithCmdArgs("--maxmemory", "500mb"),
 		//tcredis.WithConfigFile(filepath.Join("testdata", "redis7.conf")),
 	)
 	defer func() {
@@ -105,7 +106,7 @@ func TestGetGroupToken(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := &config.Config{
-		JWTPemPath:              "keys/private.pem",
+		JWTPemPath:              "../keys/private.pem",
 		JWTExpirationTime:       time.Hour * 24,
 		RedisAddr:               parsedUrl.Hostname(),
 		RedisPort:               parsedUrl.Port(),
@@ -179,7 +180,7 @@ func TestGetGroupToken(t *testing.T) {
 	require.NoError(t, err)
 
 	token, err := jwt.ParseWithClaims(response["group_token"], &tokenEncoder.GroupTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		pKeyBytes, err := os.ReadFile("keys/public.pem")
+		pKeyBytes, err := os.ReadFile("../keys/public.pem")
 		if err != nil {
 			return nil, err
 		}
@@ -232,7 +233,7 @@ func TestGroupChangesInteraction(t *testing.T) {
 	authFn := "test_auth@1.0.0"
 
 	cfg := &config.Config{
-		JWTPemPath:        "keys/private.pem",
+		JWTPemPath:        "../keys/private.pem",
 		JWTExpirationTime: time.Hour * 24,
 		RedisAddr:         parsedUrl.Hostname(),
 		RedisPort:         parsedUrl.Port(),
