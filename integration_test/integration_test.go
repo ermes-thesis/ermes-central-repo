@@ -34,7 +34,7 @@ import (
 func createNewLogger(t *testing.T) *logger.Logger {
 	log, err := logger.NewLogger(logger.Config{
 		Level:     zerolog.DebugLevel,
-		AddSource: false,
+		AddSource: true,
 		Rolling:   false,
 	})
 	require.NoError(t, err)
@@ -140,7 +140,7 @@ func TestGetGroupToken(t *testing.T) {
 	require.NoError(t, err)
 	err = redisDb.AddGroupToUser("third_group", "userId")
 
-	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize)
+	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize, createNewLogger(t))
 	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
 	require.NoError(t, err)
 	fnCache, err := caches.NewDefaultFunctionCache(cfg, log)
@@ -265,7 +265,7 @@ func TestGroupChangesInteraction(t *testing.T) {
 	require.NoError(t, err)
 	err = redisDb.AddGroupToUser("third_group", "userId")
 
-	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize)
+	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize, createNewLogger(t))
 	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
 	require.NoError(t, err)
 	fnCache, err := caches.NewDefaultFunctionCache(cfg, log)

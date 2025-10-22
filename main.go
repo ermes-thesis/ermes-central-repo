@@ -64,24 +64,6 @@ func run(ctx context.Context) error {
 	}
 	generalLogger.Infof("Configuration loaded successfully: %v", cfg)
 
-	// Create HTTP Server logger
-	httpLogger, err := loggerFactory.New("http_server")
-	if err != nil {
-		return generalLogger.ErrorfErr("Couldn't create logger for HTTP Server component: %v\n", err)
-	}
-
-	// Create redis logger
-	redisLogger, err := loggerFactory.New("redis")
-	if err != nil {
-		return generalLogger.ErrorfErr("Couldn't create logger Redis DB component: %v\n", err)
-	}
-
-	// Create function cache logger
-	functionCacheLogger, err := loggerFactory.New("function_cache")
-	if err != nil {
-		return generalLogger.ErrorfErr("Couldn't create logger for Function Cache component: %v\n", err)
-	}
-
 	// Creating token encoder to release encoded group tokens
 	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
 	if err != nil {
@@ -91,11 +73,11 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Token encoder initialized successfully")
 
 	// Creating a WASM Pool to execute authentication function(s)
-	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize)
+	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize, generalLogger.Component("WASM_POOL"))
 	generalLogger.Infof("WASM pool created successfully with %d executors", cfg.WASMPoolSize)
 
 	// Creating a RedisClient interface to access underlying DB
-	redisClient, err := db.NewRedisClient(cfg, redisLogger.With("component", "REDIS_DB"))
+	redisClient, err := db.NewRedisClient(cfg, generalLogger.Component("REDIS_DB"))
 	if err != nil {
 		generalLogger.Error("Failed to initialize redis client", "error", err)
 		return fmt.Errorf("unable to initialize redis client: %w", err)
@@ -103,7 +85,7 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Redis client created successfully", "db_addr", cfg.RedisAddr, "db_port", cfg.RedisPort, "db_index", cfg.RedisDB)
 
 	// Creating new function cache to cache retrieve authentication function(s)
-	fnCache, err := caches.NewDefaultFunctionCache(cfg, functionCacheLogger.With("component", "FN_CACHE"))
+	fnCache, err := caches.NewDefaultFunctionCache(cfg, generalLogger.Component("FN_CACHE"))
 	if err != nil {
 		generalLogger.Error("Failed to initialize function cache", "error", err)
 		return fmt.Errorf("unable to initialize function cache: %w", err)
@@ -114,7 +96,7 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Creating a new Server instance", "wasm_pool_size", cfg.WASMPoolSize, "jwt_pem_path", cfg.JWTPemPath)
 	ser := gateway.NewServer(
 		cfg,
-		httpLogger.With("component", "HTTP_SERVER"), //This logger will be used for HTTP Requests logging
+		generalLogger.Component("HTTP_SERVER"), //This logger will be used for HTTP Requests logging
 		wasmPool,
 		redisClient,
 		tknEncoder,
