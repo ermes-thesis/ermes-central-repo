@@ -56,7 +56,7 @@ func CreateGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.Handl
 			return
 		}
 
-		log.Info("Group '%s' created successfully",
+		log.InfofWith("Group '%s' created successfully",
 			[]any{groupName},
 			"remote_addr", r.RemoteAddr,
 			"method", r.Method,

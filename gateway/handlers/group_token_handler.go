@@ -26,7 +26,8 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, toke
 				"path", r.URL.RequestURI(),
 				"error", httpErr.Error(),
 			)
-			log.Debug("Authorization failed while executing '%s' authentication function",
+			log.DebugfWith("Authorization failed while executing '%s' authentication function",
+				[]any{*activeAuthFn},
 				"fn_error_code", httpErr.StatusCode(),
 				"fn_error_message", httpErr.Error(),
 				"headers", r.Header,
