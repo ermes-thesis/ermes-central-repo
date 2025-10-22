@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+// RedisClient implements the GenericDB interface using Redis as the storage backend.
+// It ensures atomicity using Redis transactions and exponential backoff for retries.
 type RedisClient struct {
 	client *redis.Client
 	log    *logger.Logger
@@ -21,6 +23,7 @@ const maxRetries = 10
 const defaultBackoff = time.Millisecond * 10
 const maxBackoff = time.Second * 1
 
+// AddGroupToUser adds a user to a group if the group exists. Retries on concurrent updates.
 func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 	ctx := context.Background()
 	backoff := defaultBackoff
@@ -87,6 +90,7 @@ func (r *RedisClient) AddGroupToUser(groupName string, userId string) error {
 	return errors.New("transaction retries exhausted")
 }
 
+// RemoveGroupFromUser removes a user from a group.
 func (r *RedisClient) RemoveGroupFromUser(groupName string, userId string) error {
 	ctx := context.Background()
 	userKey := buildUserGroupsKey(userId)
@@ -112,6 +116,7 @@ func (r *RedisClient) RemoveGroupFromUser(groupName string, userId string) error
 	return nil
 }
 
+// GetUserGroups retrieves the list of groups a user belongs to.
 func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 	ctx := context.Background()
 
@@ -129,6 +134,7 @@ func (r *RedisClient) GetUserGroups(userId string) ([]string, error) {
 	return groups, nil
 }
 
+// CreateGroup creates a new group and associates the given participants.
 func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) error {
 	ctx := context.Background()
 
@@ -218,6 +224,7 @@ func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) err
 	return errors.New("transaction retries exhausted")
 }
 
+// DeleteGroup removes a group and its user associations.
 func (r *RedisClient) DeleteGroup(groupName string) error {
 	ctx := context.Background()
 
@@ -285,6 +292,7 @@ func (r *RedisClient) DeleteGroup(groupName string) error {
 	return errors.New("transaction retries exhausted")
 }
 
+// GetExistingGroups retrieves the list of all existing groups.
 func (r *RedisClient) GetExistingGroups() ([]string, error) {
 	ctx := context.Background()
 
@@ -318,6 +326,7 @@ func (r *RedisClient) GetExistingGroups() ([]string, error) {
 	return existingGroups, nil
 }
 
+// GetGroupUsers retrieves all users associated with a group.
 func (r *RedisClient) GetGroupUsers(groupName string) ([]string, error) {
 	ctx := context.Background()
 
@@ -338,6 +347,7 @@ func (r *RedisClient) GetGroupUsers(groupName string) ([]string, error) {
 	return usersInGroup, nil
 }
 
+// Close closes the Redis client connection.
 func (r *RedisClient) Close() error {
 	err := r.client.Close()
 	if err != nil {
@@ -349,14 +359,13 @@ func (r *RedisClient) Close() error {
 	return nil
 }
 
+// Helper key builders
 func buildExistenceGroupKey(groupName string) string {
 	return fmt.Sprintf("info:%v", groupName)
 }
-
 func buildGroupParticipantsKey(groupName string) string {
 	return fmt.Sprintf("group:%v", groupName)
 }
-
 func buildUserGroupsKey(userId string) string {
 	return fmt.Sprintf("user:%v", userId)
 }
