@@ -2,14 +2,8 @@
 	"name": "ErmesCentralRepoDemo",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "go",
-	// Environment variable accessible later from Go code
-//	"remoteEnv": {
-//		"DATABASE_URL": "postgres://user:password@postgres:5432/central_repo?sslmode=disable"
-//	}
     "workspaceFolder": "/workspaces/ermes-central-repo",
 	"mounts": [
-		"source=${localWorkspaceFolder}/../ermes-wasm-pool,target=/workspaces/ermes-wasm-pool,type=bind"
+		"source=${localWorkspaceFolder}/../ermes-common,target=/workspaces/ermes-common,type=bind"
 	],
-	"postCreateCommand": "go work init . && go work sync",
-	"postAttachCommand": "(if [ -d \"../ermes-wasm-pool\" ] && [ -f \"../ermes-wasm-pool/go.mod\" ]; then go work use ../ermes-wasm-pool; fi) && go work sync"
 }
