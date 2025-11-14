@@ -4,15 +4,15 @@ import (
 	caches_mock "ermes-central-repo/mocks/caches"
 	db_mock "ermes-central-repo/mocks/db"
 	wasm_mock "ermes-central-repo/mocks/ermes-common/wasm-pool"
-	wasm_mock_executor "ermes-central-repo/mocks/ermes-common/wasm-pool/executor"
 	tokenEncoder_mock "ermes-central-repo/mocks/tokenEncoder"
 	"errors"
-	"github.com/ermes-thesis/ermes-common/model"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/ermes-thesis/ermes-common/model"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGroupTokenHandler(t *testing.T) {
@@ -27,19 +27,16 @@ func TestGroupTokenHandler(t *testing.T) {
 
 	redisMock := db_mock.NewGenericDB(t)
 	wasmPoolMock := wasm_mock.NewExecutorPool(t)
-	wasmExecutorMock := wasm_mock_executor.NewExecutor(t)
 	cacheMock := caches_mock.NewFunctionCache(t)
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	redisMock.EXPECT().GetUserGroups("test_user").Return(groupList, nil).Once()
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Acquire().Return(wasmExecutorMock)
-	wasmExecutorMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     200,
 		Response:     userId,
 		CacheUpdates: nil,
 	})
-	wasmExecutorMock.EXPECT().Release().Return()
 	tokenEncoderMock.EXPECT().EncodeGroupToken(groupList, userId).Return("groupToken", nil)
 
 	handler := RetrieveGroupToken(redisMock, wasmPoolMock, tokenEncoderMock, &authFunction, log, cacheMock)
@@ -149,18 +146,15 @@ func TestGroupTokenHandler_AuthenticationFailed(t *testing.T) {
 
 	redisMock := db_mock.NewGenericDB(t)
 	wasmPoolMock := wasm_mock.NewExecutorPool(t)
-	wasmExecutorMock := wasm_mock_executor.NewExecutor(t)
 	cacheMock := caches_mock.NewFunctionCache(t)
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Acquire().Return(wasmExecutorMock)
-	wasmExecutorMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     500,
 		Response:     userId,
 		CacheUpdates: nil,
 	})
-	wasmExecutorMock.EXPECT().Release().Return()
 
 	handler := RetrieveGroupToken(redisMock, wasmPoolMock, tokenEncoderMock, &authFunction, log, cacheMock)
 
@@ -189,18 +183,15 @@ func TestGroupTokenHandler_UserGroupsRetrievalFailed(t *testing.T) {
 
 	redisMock := db_mock.NewGenericDB(t)
 	wasmPoolMock := wasm_mock.NewExecutorPool(t)
-	wasmExecutorMock := wasm_mock_executor.NewExecutor(t)
 	cacheMock := caches_mock.NewFunctionCache(t)
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Acquire().Return(wasmExecutorMock)
-	wasmExecutorMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     200,
 		Response:     userId,
 		CacheUpdates: nil,
 	})
-	wasmExecutorMock.EXPECT().Release().Return()
 	redisMock.EXPECT().GetUserGroups("test_user").Return(nil, errors.New("some error")).Once()
 
 	handler := RetrieveGroupToken(redisMock, wasmPoolMock, tokenEncoderMock, &authFunction, log, cacheMock)
@@ -231,18 +222,15 @@ func TestGroupTokenHandler_EncodeGroupTokenFailed(t *testing.T) {
 
 	redisMock := db_mock.NewGenericDB(t)
 	wasmPoolMock := wasm_mock.NewExecutorPool(t)
-	wasmExecutorMock := wasm_mock_executor.NewExecutor(t)
 	cacheMock := caches_mock.NewFunctionCache(t)
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Acquire().Return(wasmExecutorMock)
-	wasmExecutorMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     200,
 		Response:     userId,
 		CacheUpdates: nil,
 	})
-	wasmExecutorMock.EXPECT().Release().Return()
 	redisMock.EXPECT().GetUserGroups("test_user").Return(groupList, nil).Once()
 	tokenEncoderMock.EXPECT().EncodeGroupToken(groupList, userId).Return("", errors.New("some error")).Once()
 

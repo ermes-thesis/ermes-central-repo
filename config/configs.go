@@ -8,6 +8,7 @@ import (
 
 	"github.com/ermes-thesis/ermes-common/caches"
 	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/ermes-thesis/ermes-common/wasm-pool"
 	"github.com/spf13/viper"
 )
 
@@ -19,7 +20,8 @@ type Config struct {
 	RedisPassword           string                           `mapstructure:"redis_password"`
 	RedisDB                 int                              `mapstructure:"redis_db"`
 	HTTPPort                string                           `mapstructure:"http_port"`
-	WASMPoolSize            int                              `mapstructure:"wasm_pool_size"`
+	WasmRuntime             wasm.ChosenWasmRuntime           `mapstructure:"wasm_runtime"`
+	WasmPoolConfig          wasm.Config                      `mapstructure:"wasm_pool_config"`
 	ErmesSecret             string                           `mapstructure:"ermes_secret"`
 	ClientSecret            string                           `mapstructure:"client_secret"`
 	DevSecret               string                           `mapstructure:"dev_secret"`
@@ -29,7 +31,7 @@ type Config struct {
 	LatestCache             caches.LatestCacheConfig         `mapstructure:"latest_cache"`
 }
 
-func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
+func LoadConfig(log logger.Logger, cfgPath string) (*Config, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger is nil")
 	}
@@ -56,7 +58,13 @@ func LoadConfig(log *logger.Logger, cfgPath string) (*Config, error) {
 	v.SetDefault("redis_port", "6379")
 	v.SetDefault("redis_db", "0")
 	v.SetDefault("http_port", "8080")
-	v.SetDefault("wasm_pool_size", 10)
+	v.SetDefault("wasm_runtime", wasm.Wasmtime)
+	v.SetDefault("wasm_pool_config", wasm.Config{
+		PoolSize:  30,
+		Timeout:   5 * time.Second,
+		WithCache: true,
+		IsAot:     false,
+	})
 	v.SetDefault("function_registry_address", "localhost")
 	v.SetDefault("function_registry_port", "8080")
 	v.SetDefault("function_cache", caches.MetadataBinaryCacheConfig{

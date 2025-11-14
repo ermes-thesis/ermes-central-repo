@@ -1,14 +1,16 @@
 package config
 
 import (
-	"github.com/ermes-thesis/ermes-common/caches"
-	"github.com/ermes-thesis/ermes-common/logger"
-	"github.com/rs/zerolog"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/ermes-thesis/ermes-common/caches"
+	"github.com/ermes-thesis/ermes-common/logger"
+	"github.com/ermes-thesis/ermes-common/wasm-pool"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadConfig_FromSpecificPath(t *testing.T) {
@@ -30,7 +32,9 @@ func TestLoadConfig_FromSpecificPath(t *testing.T) {
 			"REDIS_PASSWORD: \"eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81\"\n" +
 			"REDIS_DB: \"0\"\n" +
 			"HTTP_PORT: \"8080\"\n" +
-			"WASM_POOL_SIZE: \"10\"\n" +
+			"WASM_RUNTIME: \"0\"\n" +
+			"WASM_POOL_CONFIG: \n" +
+			"  poolSize: \"10\"\n" +
 			"ERMES_SECRET: \"secret\"\n" +
 			"CLIENT_SECRET: \"client_secret\"\n" +
 			"DEV_SECRET: \"dev_secret\"\n" +
@@ -48,7 +52,8 @@ func TestLoadConfig_FromSpecificPath(t *testing.T) {
 	require.Equal(t, "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", cfg.RedisPassword)
 	require.Equal(t, 0, cfg.RedisDB)
 	require.Equal(t, "8080", cfg.HTTPPort)
-	require.Equal(t, 10, cfg.WASMPoolSize)
+	require.Equal(t, wasm.Wasmedge, cfg.WasmRuntime)
+	require.Equal(t, 10, cfg.WasmPoolConfig.PoolSize)
 	require.Equal(t, "secret", cfg.ErmesSecret)
 	require.Equal(t, "client_secret", cfg.ClientSecret)
 	require.Equal(t, "dev_secret", cfg.DevSecret)
@@ -73,7 +78,9 @@ func TestLoadConfig_FromCurrentDirectory(t *testing.T) {
 			"REDIS_PASSWORD: \"eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81\"\n" +
 			"REDIS_DB: \"0\"\n" +
 			"HTTP_PORT: \"8080\"\n" +
-			"WASM_POOL_SIZE: \"10\"\n" +
+			"WASM_RUNTIME: \"0\"\n" +
+			"WASM_POOL_CONFIG: \n" +
+			"  poolSize: \"10\"\n" +
 			"ERMES_SECRET: \"secret\"\n" +
 			"CLIENT_SECRET: \"client_secret\"\n" +
 			"DEV_SECRET: \"dev_secret\"\n" +
@@ -92,7 +99,8 @@ func TestLoadConfig_FromCurrentDirectory(t *testing.T) {
 	require.Equal(t, "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", cfg.RedisPassword)
 	require.Equal(t, 0, cfg.RedisDB)
 	require.Equal(t, "8080", cfg.HTTPPort)
-	require.Equal(t, 10, cfg.WASMPoolSize)
+	require.Equal(t, wasm.Wasmedge, cfg.WasmRuntime)
+	require.Equal(t, 10, cfg.WasmPoolConfig.PoolSize)
 	require.Equal(t, "secret", cfg.ErmesSecret)
 	require.Equal(t, "client_secret", cfg.ClientSecret)
 	require.Equal(t, "dev_secret", cfg.DevSecret)
@@ -126,7 +134,8 @@ func TestDefaultValues(t *testing.T) {
 	require.Equal(t, "6379", cfg.RedisPort)
 	require.Equal(t, 0, cfg.RedisDB)
 	require.Equal(t, "8080", cfg.HTTPPort)
-	require.Equal(t, 10, cfg.WASMPoolSize)
+	require.Equal(t, wasm.Wasmtime, cfg.WasmRuntime)
+	require.Equal(t, 30, cfg.WasmPoolConfig.PoolSize)
 	require.Equal(t, "secret", cfg.ErmesSecret)
 	require.Equal(t, "client_secret", cfg.ClientSecret)
 	require.Equal(t, "dev_secret", cfg.DevSecret)

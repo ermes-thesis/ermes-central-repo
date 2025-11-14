@@ -16,7 +16,7 @@ import (
 // It ensures atomicity using Redis transactions and exponential backoff for retries.
 type RedisClient struct {
 	client *redis.Client
-	log    *logger.Logger
+	log    logger.Logger
 }
 
 const maxRetries = 10

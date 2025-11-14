@@ -96,7 +96,7 @@ type GenericDB interface {
 // Returns:
 //   - GenericDB: an initialized Redis client implementing the GenericDB interface
 //   - error: non-nil if the connection could not be established
-func NewRedisClient(cfg *config.Config, log *logger.Logger) (GenericDB, error) {
+func NewRedisClient(cfg *config.Config, log logger.Logger) (GenericDB, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddr + ":" + cfg.RedisPort,
 		Password: cfg.RedisPassword,

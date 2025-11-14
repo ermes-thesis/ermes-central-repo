@@ -10,11 +10,6 @@ import (
 	"ermes-central-repo/gateway"
 	"ermes-central-repo/tokenEncoder"
 	"fmt"
-	common_caches "github.com/ermes-thesis/ermes-common/caches"
-	"github.com/ermes-thesis/ermes-common/model"
-	"github.com/ermes-thesis/ermes-common/wasm-pool"
-	"github.com/golang-jwt/jwt/v5"
-	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +17,12 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	common_caches "github.com/ermes-thesis/ermes-common/caches"
+	"github.com/ermes-thesis/ermes-common/model"
+	"github.com/ermes-thesis/ermes-common/wasm-pool"
+	"github.com/golang-jwt/jwt/v5"
+	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
 
 	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/rs/zerolog"
@@ -31,7 +32,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
-func createNewLogger(t *testing.T) *logger.Logger {
+func createNewLogger(t *testing.T) logger.Logger {
 	log, err := logger.NewLogger(logger.Config{
 		Level:     zerolog.DebugLevel,
 		AddSource: true,
@@ -106,13 +107,19 @@ func TestGetGroupToken(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := &config.Config{
-		JWTPemPath:              "../keys/private.pem",
-		JWTExpirationTime:       time.Hour * 24,
-		RedisAddr:               parsedUrl.Hostname(),
-		RedisPort:               parsedUrl.Port(),
-		RedisPassword:           "",
-		RedisDB:                 0,
-		WASMPoolSize:            20,
+		JWTPemPath:        "../keys/private.pem",
+		JWTExpirationTime: time.Hour * 24,
+		RedisAddr:         parsedUrl.Hostname(),
+		RedisPort:         parsedUrl.Port(),
+		RedisPassword:     "",
+		RedisDB:           0,
+		WasmRuntime:       wasm.Wasmtime,
+		WasmPoolConfig: wasm.Config{
+			PoolSize:  10,
+			Timeout:   time.Second * 5,
+			WithCache: true,
+			IsAot:     false,
+		},
 		ErmesSecret:             "secret",
 		ClientSecret:            "client_secret",
 		DevSecret:               "dev_secret",
@@ -140,7 +147,7 @@ func TestGetGroupToken(t *testing.T) {
 	require.NoError(t, err)
 	err = redisDb.AddGroupToUser("third_group", "userId")
 
-	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize, createNewLogger(t))
+	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WasmPoolConfig, createNewLogger(t))
 	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
 	require.NoError(t, err)
 	fnCache, err := caches.NewDefaultFunctionCache(cfg, log)
@@ -239,10 +246,16 @@ func TestGroupChangesInteraction(t *testing.T) {
 		RedisPort:         parsedUrl.Port(),
 		RedisPassword:     "",
 		RedisDB:           0,
-		WASMPoolSize:      20,
-		ErmesSecret:       "secret",
-		ClientSecret:      "client_secret",
-		DevSecret:         "dev_secret",
+		WasmRuntime:       wasm.Wasmtime,
+		WasmPoolConfig: wasm.Config{
+			PoolSize:  10,
+			Timeout:   time.Second * 5,
+			WithCache: true,
+			IsAot:     false,
+		},
+		ErmesSecret:  "secret",
+		ClientSecret: "client_secret",
+		DevSecret:    "dev_secret",
 		FunctionCache: common_caches.MetadataBinaryCacheConfig{
 			Size:   100,
 			Ttl:    0,
@@ -265,7 +278,7 @@ func TestGroupChangesInteraction(t *testing.T) {
 	require.NoError(t, err)
 	err = redisDb.AddGroupToUser("third_group", "userId")
 
-	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize, createNewLogger(t))
+	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WasmPoolConfig, createNewLogger(t))
 	tknEncoder, err := tokenEncoder.NewGroupTokenEncoder(cfg.JWTPemPath, cfg.JWTExpirationTime)
 	require.NoError(t, err)
 	fnCache, err := caches.NewDefaultFunctionCache(cfg, log)

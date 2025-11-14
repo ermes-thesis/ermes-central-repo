@@ -73,8 +73,22 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Token encoder initialized successfully")
 
 	// Creating a WASM Pool to execute authentication function(s)
-	wasmPool := wasm.NewWasmedgeExecutorPool(cfg.WASMPoolSize, generalLogger.Component("WASM_POOL"))
-	generalLogger.Infof("WASM pool created successfully with %d executors", cfg.WASMPoolSize)
+	var wasmPool wasm.ExecutorPool
+	switch cfg.WasmRuntime {
+	case wasm.Wasmedge:
+		generalLogger.Info("WASM runtime selected: Wasmedge")
+		wasmPool = wasm.NewWasmedgeExecutorPool(cfg.WasmPoolConfig, generalLogger.Component("WASM_POOL"))
+	case wasm.Wasmtime:
+		generalLogger.Info("WASM runtime selected: Wasmtime")
+		wasmPool = wasm.NewWasmtimeExecutorPool(cfg.WasmPoolConfig, generalLogger.Component("WASM_POOL"))
+	case wasm.Wazero:
+		generalLogger.Info("WASM runtime selected: Wazero")
+		wasmPool = wasm.NewWazeroExecutorPool(cfg.WasmPoolConfig, ctx, generalLogger.Component("WASM_POOL"))
+	default:
+		generalLogger.Errorf("invalid WASM runtime selected: %s", cfg.WasmRuntime)
+		return fmt.Errorf("invalid WASM runtime selected: %s", cfg.WasmRuntime)
+	}
+	generalLogger.Infof("WASM pool created successfully with %d executors", cfg.WasmPoolConfig.PoolSize)
 
 	// Creating a RedisClient interface to access underlying DB
 	redisClient, err := db.NewRedisClient(cfg, generalLogger.Component("REDIS_DB"))
@@ -93,7 +107,7 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Function cache initialized successfully")
 
 	// Create Group Token Provider Server Node
-	generalLogger.Info("Creating a new Server instance", "wasm_pool_size", cfg.WASMPoolSize, "jwt_pem_path", cfg.JWTPemPath)
+	generalLogger.Info("Creating a new Server instance", "wasm_pool_size", cfg.WasmPoolConfig.PoolSize, "jwt_pem_path", cfg.JWTPemPath)
 	ser := gateway.NewServer(
 		cfg,
 		generalLogger.Component("HTTP_SERVER"), //This logger will be used for HTTP Requests logging
@@ -107,7 +121,7 @@ func run(ctx context.Context) error {
 		"jwt_exp_time", cfg.JWTExpirationTime,
 		"http_server_port", cfg.HTTPPort,
 		"jwt_pem_path", cfg.JWTPemPath,
-		"wasm_pool_size", cfg.WASMPoolSize,
+		"wasm_pool_size", cfg.WasmPoolConfig.PoolSize,
 		"redis_addr", cfg.RedisAddr,
 		"redis_port", cfg.RedisPort,
 		"redis_db", cfg.RedisDB,

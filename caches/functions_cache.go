@@ -50,7 +50,7 @@ type FunctionCacheImpl struct {
 	LatestVersions   caches.GenericCache[string]
 	fetcher          caches.Fetcher[*FunctionBundle]
 	group            singleflight.Group
-	log              *logger.Logger
+	log              logger.Logger
 }
 
 // FunctionBundle represents a packaged function, consisting of
@@ -64,7 +64,7 @@ type FunctionBundle struct {
 //
 // It initializes metadata/binary caches and a latest-version tracker based on
 // the configuration parameters
-func NewFunctionCache(cfg *config.Config, fetcher caches.Fetcher[*FunctionBundle], log *logger.Logger) (*FunctionCacheImpl, error) {
+func NewFunctionCache(cfg *config.Config, fetcher caches.Fetcher[*FunctionBundle], log logger.Logger) (*FunctionCacheImpl, error) {
 	binCache, err := caches.NewMetadataBinaryCache(cfg.FunctionCache)
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)
@@ -85,7 +85,7 @@ func NewFunctionCache(cfg *config.Config, fetcher caches.Fetcher[*FunctionBundle
 
 // NewDefaultFunctionCache creates a FunctionCacheImpl with a default remote Fetcher
 // that will communicate with the Ermes Function Registry node
-func NewDefaultFunctionCache(cfg *config.Config, log *logger.Logger) (*FunctionCacheImpl, error) {
+func NewDefaultFunctionCache(cfg *config.Config, log logger.Logger) (*FunctionCacheImpl, error) {
 	binCache, err := caches.NewMetadataBinaryCache(cfg.FunctionCache)
 	if err != nil {
 		return nil, fmt.Errorf("error creating binary cache: %v", err)

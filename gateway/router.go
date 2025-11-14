@@ -31,7 +31,7 @@ func (s *Server) initRouter() {
 	s.router.HandleFunc("PUT /set-auth-function/{name}", filterDevSecret(s.log, devSecret, handlers.SetAuthFunctionHandler(s.cache, &s.activeAuthFn, s.log)))
 }
 
-func filterErmesSecret(log *logger.Logger, ermesSecret string, h http.Handler) http.HandlerFunc {
+func filterErmesSecret(log logger.Logger, ermesSecret string, h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-ERMES-SECRET") != ermesSecret {
 			log.Warn("Unauthorized request with invalid Ermes secret",
@@ -49,7 +49,7 @@ func filterErmesSecret(log *logger.Logger, ermesSecret string, h http.Handler) h
 	}
 }
 
-func filterClientSecret(log *logger.Logger, ermesClientLibrarySecret string, h http.Handler) http.HandlerFunc {
+func filterClientSecret(log logger.Logger, ermesClientLibrarySecret string, h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-CLIENT-SECRET") != ermesClientLibrarySecret {
 			log.Warn("Unauthorized request with invalid Ermes Client library secret",
@@ -67,7 +67,7 @@ func filterClientSecret(log *logger.Logger, ermesClientLibrarySecret string, h h
 	}
 }
 
-func filterDevSecret(log *logger.Logger, devSecret string, h http.Handler) http.HandlerFunc {
+func filterDevSecret(log logger.Logger, devSecret string, h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-DEV-SECRET") != devSecret {
 			log.Warn("Unauthorized request with invalid Ermes Dev Secret",

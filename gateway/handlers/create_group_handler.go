@@ -9,7 +9,7 @@ import (
 	"github.com/ermes-thesis/ermes-common/logger"
 )
 
-func CreateGroupHandler(redisClient db.GenericDB, log *logger.Logger) http.HandlerFunc {
+func CreateGroupHandler(redisClient db.GenericDB, log logger.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 

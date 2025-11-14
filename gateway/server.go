@@ -20,14 +20,14 @@ type Server struct {
 	tokenEncoder tokenEncoder.TokenEncoder
 	cache        caches.FunctionCache
 	activeAuthFn string
-	log          *logger.Logger
+	log          logger.Logger
 }
 
 func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(cfg *config.Config, log *logger.Logger, wasmPool wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache, activeAuthFn string) *Server {
+func NewServer(cfg *config.Config, log logger.Logger, wasmPool wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache, activeAuthFn string) *Server {
 	ser := &Server{
 		nodeCfg:      cfg,
 		wasmPool:     wasmPool,
