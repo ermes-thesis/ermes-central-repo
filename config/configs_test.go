@@ -9,13 +9,12 @@ import (
 	"github.com/ermes-thesis/ermes-common/caches"
 	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/ermes-thesis/ermes-common/wasm-pool"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLoadConfig_FromSpecificPath(t *testing.T) {
 	log, err := logger.NewLogger(logger.Config{
-		Level:         zerolog.DebugLevel,
+		Level:         logger.DebugLevel,
 		Format:        "text",
 		Output:        nil,
 		StdoutEnabled: false,
@@ -62,7 +61,7 @@ func TestLoadConfig_FromSpecificPath(t *testing.T) {
 
 func TestLoadConfig_FromCurrentDirectory(t *testing.T) {
 	log, err := logger.NewLogger(logger.Config{
-		Level:         zerolog.DebugLevel,
+		Level:         logger.DebugLevel,
 		Format:        "text",
 		Output:        nil,
 		StdoutEnabled: false,
@@ -109,7 +108,7 @@ func TestLoadConfig_FromCurrentDirectory(t *testing.T) {
 
 func TestDefaultValues(t *testing.T) {
 	log, err := logger.NewLogger(logger.Config{
-		Level:         zerolog.DebugLevel,
+		Level:         logger.DebugLevel,
 		Format:        "text",
 		Output:        nil,
 		StdoutEnabled: false,
@@ -153,7 +152,7 @@ func TestDefaultValues(t *testing.T) {
 
 func TestConfigFileNotFound(t *testing.T) {
 	log, err := logger.NewLogger(logger.Config{
-		Level:         zerolog.DebugLevel,
+		Level:         logger.DebugLevel,
 		Format:        "text",
 		Output:        nil,
 		StdoutEnabled: false,
@@ -166,7 +165,7 @@ func TestConfigFileNotFound(t *testing.T) {
 
 func TestMissingSecretLeadToFail(t *testing.T) {
 	log, err := logger.NewLogger(logger.Config{
-		Level:         zerolog.DebugLevel,
+		Level:         logger.DebugLevel,
 		Format:        "text",
 		Output:        nil,
 		StdoutEnabled: false,

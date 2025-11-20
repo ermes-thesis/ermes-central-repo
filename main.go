@@ -18,7 +18,6 @@ import (
 
 	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/ermes-thesis/ermes-common/wasm-pool"
-	"github.com/rs/zerolog"
 	"github.com/spf13/pflag"
 )
 
@@ -41,7 +40,7 @@ func run(ctx context.Context) error {
 	// Create logger factory
 
 	loggerFactory := logger.NewFactory(logger.Config{
-		Level:  zerolog.InfoLevel,
+		Level:  logger.InfoLevel,
 		Format: "text",
 		Output: &logger.LogFile{
 			LogDir: "gtpLogs",
