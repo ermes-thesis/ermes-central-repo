@@ -42,7 +42,7 @@ func filterErmesSecret(log logger.Logger, ermesSecret string, h http.Handler) ht
 			log.DebugfWith("Forbidden request: mismatched X-ERMES-SECRET '%s'",
 				[]any{r.Header.Get("X-ERMES-SECRET")},
 				"true_ermes_secret", ermesSecret)
-			http.Error(w, "Forbidden: invalid Ermes secret", http.StatusForbidden)
+			http.Error(w, "Forbidden: invalid Ermes secret", http.StatusUnauthorized)
 			return
 		}
 		h.ServeHTTP(w, r)
@@ -60,7 +60,7 @@ func filterClientSecret(log logger.Logger, ermesClientLibrarySecret string, h ht
 			log.DebugfWith("Forbidden request: mismatched X-CLIENT-SECRET '%s'",
 				[]any{r.Header.Get("X-CLIENT-SECRET")},
 				"true_ermes_secret", ermesClientLibrarySecret)
-			http.Error(w, "Forbidden: invalid Ermes client library secret", http.StatusForbidden)
+			http.Error(w, "Forbidden: invalid Ermes client library secret", http.StatusUnauthorized)
 			return
 		}
 		h.ServeHTTP(w, r)
@@ -78,7 +78,7 @@ func filterDevSecret(log logger.Logger, devSecret string, h http.Handler) http.H
 			log.DebugfWith("Forbidden request: mismatched X-DEV-SECRET '%s'",
 				[]any{r.Header.Get("X-DEV-SECRET")},
 				"true_ermes_secret", devSecret)
-			http.Error(w, "Forbidden: invalid Dev secret", http.StatusForbidden)
+			http.Error(w, "Forbidden: invalid Dev secret", http.StatusUnauthorized)
 			return
 		}
 		h.ServeHTTP(w, r)
