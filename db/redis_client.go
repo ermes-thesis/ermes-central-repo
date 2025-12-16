@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ermes-thesis/ermes-common/logger"
 	"github.com/redis/go-redis/v9"
-	"github.com/rs/zerolog"
 	"math/rand"
 	"strings"
 	"time"
@@ -187,7 +186,7 @@ func (r *RedisClient) CreateGroup(groupName string, participantIDs []string) err
 				"error", err,
 			)
 
-			if r.log.Enabled(zerolog.DebugLevel) {
+			if r.log.Enabled(logger.DebugLevel) {
 				for i, cmd := range cmds {
 					if err := cmd.Err(); err != nil {
 						if i == 0 {
