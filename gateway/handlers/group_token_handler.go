@@ -125,7 +125,7 @@ func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn 
 		return "ERROR_ID", &InvalidAuthFunctionErr
 	}
 
-	response := wasmPool.Invoke(wasmBinary, "authEntry", []byte(authToken))
+	response := wasmPool.Invoke(*activeAuthFn, wasmBinary, "authEntry", []byte(authToken))
 
 	if response.HttpCode != 200 {
 		return "ERROR_ID", &AuthFailedErr

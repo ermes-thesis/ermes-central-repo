@@ -62,7 +62,7 @@ func LoadConfig(log logger.Logger, cfgPath string) (*Config, error) {
 	v.SetDefault("wasm_pool_config", wasm.Config{
 		PoolSize:  30,
 		Timeout:   5 * time.Second,
-		WithCache: true,
+		WithCache: 2,
 		IsAot:     false,
 	})
 	v.SetDefault("function_registry_address", "localhost")
