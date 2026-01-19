@@ -116,6 +116,7 @@ func TestGetGroupToken(t *testing.T) {
 			PoolSize:  10,
 			Timeout:   time.Second * 5,
 			WithCache: 2,
+			CacheSize: 5,
 			IsAot:     false,
 		},
 		ErmesSecret:             "secret",
