@@ -115,7 +115,7 @@ func TestGetGroupToken(t *testing.T) {
 		WasmPoolConfig: wasm.Config{
 			PoolSize:  10,
 			Timeout:   time.Second * 5,
-			WithCache: true,
+			WithCache: 2,
 			IsAot:     false,
 		},
 		ErmesSecret:             "secret",
@@ -248,7 +248,7 @@ func TestGroupChangesInteraction(t *testing.T) {
 		WasmPoolConfig: wasm.Config{
 			PoolSize:  10,
 			Timeout:   time.Second * 5,
-			WithCache: true,
+			WithCache: 2,
 			IsAot:     false,
 		},
 		ErmesSecret:  "secret",
