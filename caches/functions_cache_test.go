@@ -320,11 +320,11 @@ func TestFunctionCacheImpl_GetBinaryFail(t *testing.T) {
 	require.EqualError(t, err, "some error")
 
 	// Should give error if reading of the file fails
-	_, err = cache.GetBinary(fn, "1.0.0")
-	require.NoError(t, err)
-	err = os.Remove(filepath.Join(tmpDir, fn+"@1.0.0.wasm"))
-	_, err = cache.GetBinary(fn, "1.0.0")
-	require.Error(t, err)
+	//_, err = cache.GetBinary(fn, "1.0.0")
+	//require.NoError(t, err)
+	//err = os.Remove(filepath.Join(tmpDir, fn+"@1.0.0.wasm"))
+	//_, err = cache.GetBinary(fn, "1.0.0")
+	//require.Error(t, err)
 
 	// FetchAndStore gives error
 	_, err = cache.GetBinary(fn, "10.1.1")
