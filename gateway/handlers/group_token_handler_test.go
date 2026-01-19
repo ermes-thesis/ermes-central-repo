@@ -32,7 +32,7 @@ func TestGroupTokenHandler(t *testing.T) {
 
 	redisMock.EXPECT().GetUserGroups("test_user").Return(groupList, nil).Once()
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke(authFunction, []byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     200,
 		Response:     userId,
 		CacheUpdates: nil,
@@ -150,7 +150,7 @@ func TestGroupTokenHandler_AuthenticationFailed(t *testing.T) {
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke(authFunction, []byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     500,
 		Response:     userId,
 		CacheUpdates: nil,
@@ -187,7 +187,7 @@ func TestGroupTokenHandler_UserGroupsRetrievalFailed(t *testing.T) {
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke(authFunction, []byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     200,
 		Response:     userId,
 		CacheUpdates: nil,
@@ -226,7 +226,7 @@ func TestGroupTokenHandler_EncodeGroupTokenFailed(t *testing.T) {
 	tokenEncoderMock := tokenEncoder_mock.NewTokenEncoder(t)
 
 	cacheMock.EXPECT().GetBinary(fn, fnVer).Return([]byte("very good binary"), nil)
-	wasmPoolMock.EXPECT().Invoke([]byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
+	wasmPoolMock.EXPECT().Invoke(authFunction, []byte("very good binary"), "authEntry", [][]byte{[]byte(authToken)}).Return(model.WasmResponse{
 		HttpCode:     200,
 		Response:     userId,
 		CacheUpdates: nil,
