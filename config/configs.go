@@ -63,6 +63,7 @@ func LoadConfig(log logger.Logger, cfgPath string) (*Config, error) {
 		PoolSize:  30,
 		Timeout:   5 * time.Second,
 		WithCache: 2,
+		CacheSize: 10,
 		IsAot:     false,
 	})
 	v.SetDefault("function_registry_address", "localhost")
