@@ -133,6 +133,7 @@ func TestGetGroupToken(t *testing.T) {
 			Size: 100,
 			Ttl:  time.Hour * 12,
 		},
+		DefaultAuthFunction: "wrongFn@1.0.0",
 	}
 
 	log := createNewLogger(t)
@@ -152,7 +153,7 @@ func TestGetGroupToken(t *testing.T) {
 	fnCache, err := caches.NewDefaultFunctionCache(cfg, log)
 	require.NoError(t, err)
 
-	app := gateway.NewServer(cfg, log, wasmPool, redisDb, tknEncoder, fnCache, "wrongFn@1.0.0")
+	app := gateway.NewServer(cfg, log, wasmPool, redisDb, tknEncoder, fnCache)
 	srv := httptest.NewServer(app.Router())
 	defer srv.Close()
 
@@ -264,6 +265,7 @@ func TestGroupChangesInteraction(t *testing.T) {
 			Size: 100,
 			Ttl:  time.Hour * 12,
 		},
+		DefaultAuthFunction: authFn,
 	}
 
 	log := createNewLogger(t)
@@ -283,7 +285,7 @@ func TestGroupChangesInteraction(t *testing.T) {
 	fnCache, err := caches.NewDefaultFunctionCache(cfg, log)
 	require.NoError(t, err)
 
-	app := gateway.NewServer(cfg, log, wasmPool, redisDb, tknEncoder, fnCache, authFn)
+	app := gateway.NewServer(cfg, log, wasmPool, redisDb, tknEncoder, fnCache)
 	srv := httptest.NewServer(app.Router())
 	defer srv.Close()
 
