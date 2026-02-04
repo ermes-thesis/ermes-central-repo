@@ -29,6 +29,7 @@ type Config struct {
 	FunctionRegistryPort    string                           `mapstructure:"function_registry_port"`
 	FunctionCache           caches.MetadataBinaryCacheConfig `mapstructure:"function_cache"`
 	LatestCache             caches.LatestCacheConfig         `mapstructure:"latest_cache"`
+	DefaultAuthFunction     string                           `mapstructure:"default_auth_function"`
 }
 
 func LoadConfig(log logger.Logger, cfgPath string) (*Config, error) {
@@ -77,6 +78,7 @@ func LoadConfig(log logger.Logger, cfgPath string) (*Config, error) {
 		Size: 100,
 		Ttl:  24 * time.Hour,
 	})
+	v.SetDefault("default_auth_function", "authFunction@latest")
 
 	v.AutomaticEnv()
 

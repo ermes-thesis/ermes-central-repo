@@ -27,7 +27,7 @@ func (s *Server) Router() http.Handler {
 	return s.router
 }
 
-func NewServer(cfg *config.Config, log logger.Logger, wasmPool wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache, activeAuthFn string) *Server {
+func NewServer(cfg *config.Config, log logger.Logger, wasmPool wasm.ExecutorPool, redis db.GenericDB, tknEncoder tokenEncoder.TokenEncoder, fnCache caches.FunctionCache) *Server {
 	ser := &Server{
 		nodeCfg:      cfg,
 		wasmPool:     wasmPool,
@@ -36,7 +36,7 @@ func NewServer(cfg *config.Config, log logger.Logger, wasmPool wasm.ExecutorPool
 		tokenEncoder: tknEncoder,
 		cache:        fnCache,
 		router:       http.NewServeMux(),
-		activeAuthFn: activeAuthFn,
+		activeAuthFn: cfg.DefaultAuthFunction,
 	}
 	ser.initRouter()
 
