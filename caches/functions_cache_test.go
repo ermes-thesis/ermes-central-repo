@@ -2,7 +2,7 @@ package caches
 
 import (
 	"ermes-central-repo/config"
-	common_caches "ermes-central-repo/mocks/ermes-common/caches"
+	common_caches "ermes-central-repo/mocks/ermes-common/github.com/ermes-thesis/ermes-common/caches"
 	"errors"
 	"fmt"
 	"os"
