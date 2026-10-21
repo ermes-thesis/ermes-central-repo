@@ -112,12 +112,13 @@ func TestGetGroupToken(t *testing.T) {
 		RedisPassword:     "",
 		RedisDB:           0,
 		WasmRuntime:       wasm.Wasmtime,
-		WasmPoolConfig: wasm.Config{
+		WasmPoolConfig: wasm.WASPConfig{
 			PoolSize:  10,
 			Timeout:   time.Second * 5,
 			WithCache: 2,
 			CacheSize: 5,
-			IsAot:     false,
+			RunMode:   1,
+			Runtime:   wasm.Wasmtime,
 		},
 		ErmesSecret:             "secret",
 		ClientSecret:            "client_secret",
@@ -247,11 +248,12 @@ func TestGroupChangesInteraction(t *testing.T) {
 		RedisPassword:     "",
 		RedisDB:           0,
 		WasmRuntime:       wasm.Wasmtime,
-		WasmPoolConfig: wasm.Config{
+		WasmPoolConfig: wasm.WASPConfig{
 			PoolSize:  10,
 			Timeout:   time.Second * 5,
 			WithCache: 2,
-			IsAot:     false,
+			RunMode:   1,
+			Runtime:   wasm.Wasmtime,
 		},
 		ErmesSecret:  "secret",
 		ClientSecret: "client_secret",

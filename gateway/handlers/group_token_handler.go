@@ -13,7 +13,7 @@ import (
 	"github.com/ermes-thesis/ermes-common/wasm-pool"
 )
 
-func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log logger.Logger, cache caches.FunctionCache) http.HandlerFunc {
+func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.WASP, tokenEncoder tokenEncoder.TokenEncoder, activeAuthFn *string, log logger.Logger, cache caches.FunctionCache) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
@@ -102,7 +102,7 @@ func RetrieveGroupToken(rdbClient db.GenericDB, wasmPool wasm.ExecutorPool, toke
 	}
 }
 
-func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn *string, cache caches.FunctionCache) (string, *HttpError) {
+func checkHTTPReqAuth(r *http.Request, wasmPool wasm.WASP, activeAuthFn *string, cache caches.FunctionCache) (string, *HttpError) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "ERROR_ID", &NoAuthHeaderErr
@@ -125,7 +125,7 @@ func checkHTTPReqAuth(r *http.Request, wasmPool wasm.ExecutorPool, activeAuthFn 
 		return "ERROR_ID", &InvalidAuthFunctionErr
 	}
 
-	response := wasmPool.Invoke(*activeAuthFn, wasmBinary, "authEntry", []byte(authToken))
+	response := wasmPool.InvokeFunction(*activeAuthFn, wasmBinary, "authEntry", []byte(authToken))
 
 	if response.HttpCode != 200 {
 		return "ERROR_ID", &AuthFailedErr

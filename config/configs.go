@@ -21,7 +21,7 @@ type Config struct {
 	RedisDB                 int                              `mapstructure:"redis_db"`
 	HTTPPort                string                           `mapstructure:"http_port"`
 	WasmRuntime             wasm.ChosenWasmRuntime           `mapstructure:"wasm_runtime"`
-	WasmPoolConfig          wasm.Config                      `mapstructure:"wasm_pool_config"`
+	WasmPoolConfig          wasm.WASPConfig                  `mapstructure:"wasm_pool_config"`
 	ErmesSecret             string                           `mapstructure:"ermes_secret"`
 	ClientSecret            string                           `mapstructure:"client_secret"`
 	DevSecret               string                           `mapstructure:"dev_secret"`
@@ -60,12 +60,13 @@ func LoadConfig(log logger.Logger, cfgPath string) (*Config, error) {
 	v.SetDefault("redis_db", "0")
 	v.SetDefault("http_port", "8080")
 	v.SetDefault("wasm_runtime", wasm.Wasmtime)
-	v.SetDefault("wasm_pool_config", wasm.Config{
+	v.SetDefault("wasm_pool_config", wasm.WASPConfig{
 		PoolSize:  30,
 		Timeout:   5 * time.Second,
 		WithCache: 2,
 		CacheSize: 10,
-		IsAot:     false,
+		RunMode:   1,
+		Runtime:   wasm.Wasmtime,
 	})
 	v.SetDefault("function_registry_address", "localhost")
 	v.SetDefault("function_registry_port", "8080")

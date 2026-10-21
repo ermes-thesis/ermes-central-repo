@@ -72,7 +72,7 @@ func run(ctx context.Context) error {
 	generalLogger.Info("Token encoder initialized successfully")
 
 	// Creating a WASM Pool to execute authentication function(s)
-	var wasmPool wasm.ExecutorPool
+	var wasmPool wasm.WASP
 	switch cfg.WasmRuntime {
 	case wasm.Wasmedge:
 		generalLogger.Info("WASM runtime selected: Wasmedge")
